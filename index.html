@@ -17,8 +17,12 @@
             --text-primary: #e9edef;
             --text-secondary: #8696a0;
             --accent: #25d366;
+            --admin-color: #8b5cf6;
             --border-color: #2a3942;
             --header-height: 60px;
+            --danger: #ef4444;
+            --warning: #f59e0b;
+            --online-color: #25d366;
         }
         
         [data-theme="light"] {
@@ -75,7 +79,16 @@
             font-size: 18px; 
             flex-shrink: 0;
         }
+        .sidebar-header .avatar.admin-avatar { background: var(--admin-color); }
         .sidebar-header .name { color: var(--text-primary); font-weight: 600; font-size: 16px; }
+        .sidebar-header .name .admin-badge { 
+            background: var(--admin-color); 
+            color: white; 
+            font-size: 10px; 
+            padding: 2px 8px; 
+            border-radius: 10px; 
+            margin-left: 6px; 
+        }
         .sidebar-header .header-actions { display: flex; gap: 2px; }
         .sidebar-header .header-actions button { 
             background: transparent; 
@@ -148,9 +161,37 @@
             font-size: 18px; 
             flex-shrink: 0; 
         }
+        .users-list .user-item .avatar.admin-user-avatar { background: var(--admin-color); }
         .users-list .user-item .info { flex: 1; min-width: 0; }
         .users-list .user-item .info .name { color: var(--text-primary); font-weight: 500; font-size: 16px; }
         .users-list .user-item .info .last-msg { color: var(--text-secondary); font-size: 14px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .users-list .user-item .info .admin-tag { 
+            background: var(--admin-color); 
+            color: white; 
+            font-size: 9px; 
+            padding: 1px 6px; 
+            border-radius: 8px; 
+            margin-left: 4px; 
+        }
+        .users-list .user-item .online-dot {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            background: var(--online-color);
+            display: inline-block;
+            margin-left: 6px;
+            flex-shrink: 0;
+        }
+        .users-list .user-item .offline-dot {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            background: var(--text-secondary);
+            display: inline-block;
+            margin-left: 6px;
+            flex-shrink: 0;
+            opacity: 0.3;
+        }
         
         /* ===== CHAT AREA ===== */
         .chat-area { 
@@ -214,7 +255,7 @@
             justify-content: center; 
         }
         .chat-header .actions button:hover { background: var(--border-color); }
-        .chat-header .actions .clear-btn { color: #ef4444; font-size: 13px; font-weight: 500; }
+        .chat-header .actions .clear-btn { color: var(--danger); font-size: 13px; font-weight: 500; }
         
         .messages-box { 
             flex: 1; 
@@ -257,6 +298,13 @@
             float: right; 
             margin-top: 2px; 
         }
+        .messages-box .message .sender-name { 
+            font-size: 11px; 
+            font-weight: 600; 
+            color: var(--admin-color); 
+            margin-bottom: 2px; 
+            display: block; 
+        }
         .messages-box .message img { 
             max-width: 200px; 
             max-height: 200px; 
@@ -265,6 +313,7 @@
             margin: 3px 0; 
             cursor: pointer;
         }
+        .messages-box .message.admin-message { border-left: 3px solid var(--admin-color); }
         
         .empty-state { 
             display: flex; 
@@ -301,7 +350,7 @@
         .image-preview.show { display: flex; }
         .image-preview img { max-height: 60px; border-radius: 6px; }
         .image-preview .remove-btn { 
-            background: #ef4444; 
+            background: var(--danger); 
             color: white; 
             border: none; 
             padding: 3px 10px; 
@@ -411,7 +460,80 @@
             display: none; 
         }
         .login-box .error.show { display: block; }
-        .login-box .footer-text { color: var(--text-secondary); font-size: 11px; text-align: center; margin-top: 10px; }
+        .login-box .footer-text { 
+            color: var(--text-secondary); 
+            font-size: 12px; 
+            text-align: center; 
+            margin-top: 10px; 
+            cursor: pointer; 
+        }
+        .login-box .footer-text:hover { color: var(--accent); }
+        
+        /* ===== PASSWORD RESET MODAL ===== */
+        .reset-overlay { 
+            display: none; 
+            position: fixed; 
+            top: 0; 
+            left: 0; 
+            width: 100%; 
+            height: 100%; 
+            background: rgba(0,0,0,0.7); 
+            z-index: 2000; 
+            justify-content: center; 
+            align-items: center; 
+            padding: 20px;
+        }
+        .reset-overlay.show { display: flex; }
+        .reset-modal { 
+            background: var(--bg-secondary); 
+            padding: 28px; 
+            border-radius: 16px; 
+            width: 400px; 
+            max-width: 100%; 
+        }
+        .reset-modal h2 { color: var(--text-primary); margin-bottom: 12px; font-size: 20px; }
+        .reset-modal .reset-desc { color: var(--text-secondary); font-size: 13px; margin-bottom: 16px; }
+        .reset-modal .form-group { margin-bottom: 12px; }
+        .reset-modal .form-group label { color: var(--text-secondary); font-size: 12px; font-weight: 500; display: block; margin-bottom: 3px; }
+        .reset-modal .form-group input { 
+            width: 100%; 
+            padding: 8px 12px; 
+            border-radius: 8px; 
+            border: 1px solid var(--border-color); 
+            background: var(--bg-primary); 
+            color: var(--text-primary); 
+            font-size: 14px; 
+            outline: none; 
+        }
+        .reset-modal .form-group input:focus { border-color: var(--accent); }
+        .reset-modal .modal-actions { display: flex; gap: 8px; margin-top: 14px; }
+        .reset-modal .modal-actions button { 
+            padding: 8px 16px; 
+            border: none; 
+            border-radius: 8px; 
+            cursor: pointer; 
+            font-weight: 600; 
+            font-size: 13px; 
+            flex: 1; 
+        }
+        .reset-modal .modal-actions .reset-btn { background: var(--warning); color: white; }
+        .reset-modal .modal-actions .reset-btn:hover { background: #d97706; }
+        .reset-modal .modal-actions .close-btn { background: var(--border-color); color: var(--text-primary); }
+        .reset-modal .modal-actions .close-btn:hover { background: #3a4a52; }
+        .reset-modal .reset-error { 
+            color: #f5a5a5; 
+            font-size: 13px; 
+            margin-bottom: 8px; 
+            display: none; 
+        }
+        .reset-modal .reset-error.show { display: block; }
+        .reset-modal .reset-success { 
+            color: #4ade80; 
+            font-size: 13px; 
+            margin-bottom: 8px; 
+            display: none; 
+        }
+        .reset-modal .reset-success.show { display: block; }
         
         .hidden { display: none !important; }
         
@@ -604,7 +726,8 @@
                     <input type="text" id="loginDisplayName" placeholder="Your display name" />
                 </div>
                 <button class="login-btn" id="loginBtn">Login / Register</button>
-                <p class="footer-text">* New account will be created if username doesn't exist</p>
+                <p class="footer-text" id="forgotPasswordLink">🔑 Forgot Password? Reset it here</p>
+                <p class="footer-text" style="margin-top: 4px; font-size: 11px; opacity: 0.6;">* New account will be created if username doesn't exist</p>
             </div>
         </div>
 
@@ -700,6 +823,32 @@
                 </div>
             </div>
         </div>
+
+        <!-- ===== PASSWORD RESET MODAL ===== -->
+        <div class="reset-overlay" id="resetOverlay">
+            <div class="reset-modal">
+                <h2>🔑 Reset Password</h2>
+                <p class="reset-desc">Enter your username and new password. Your password will be reset.</p>
+                <div id="resetError" class="reset-error"></div>
+                <div id="resetSuccess" class="reset-success"></div>
+                <div class="form-group">
+                    <label>👤 Username</label>
+                    <input type="text" id="resetUsername" placeholder="Enter your username" />
+                </div>
+                <div class="form-group">
+                    <label>New Password</label>
+                    <input type="password" id="resetNewPassword" placeholder="Enter new password" />
+                </div>
+                <div class="form-group">
+                    <label>Confirm New Password</label>
+                    <input type="password" id="resetConfirmPassword" placeholder="Confirm new password" />
+                </div>
+                <div class="modal-actions">
+                    <button class="reset-btn" id="resetPasswordBtn">Reset Password</button>
+                    <button class="close-btn" id="closeResetBtn">Cancel</button>
+                </div>
+            </div>
+        </div>
     </div>
 
     <script>
@@ -708,14 +857,20 @@
         // ============================================================
         const API_BASE = 'https://private-chat-app-a5el.onrender.com';
 
+        // ===== ADMIN CREDENTIALS (FIXED - DO NOT CHANGE) =====
+        const ADMIN_USERNAME = 'render';
+        const ADMIN_PASSWORD = 'render.com';
+
         let currentUser = null;
         let currentToken = null;
         let selectedUserId = null;
         let messageInterval = null;
         let allUsers = [];
+        let activeUsers = [];
         let pendingImage = null;
         let currentTheme = 'dark';
         let isMobile = window.innerWidth <= 768;
+        let isAdmin = false;
 
         // DOM Elements
         const loginPage = document.getElementById('loginPage');
@@ -757,6 +912,15 @@
         const removeImageBtn = document.getElementById('removeImageBtn');
         const sidebar = document.getElementById('sidebar');
         const backBtn = document.getElementById('backBtn');
+        const resetOverlay = document.getElementById('resetOverlay');
+        const resetUsername = document.getElementById('resetUsername');
+        const resetNewPassword = document.getElementById('resetNewPassword');
+        const resetConfirmPassword = document.getElementById('resetConfirmPassword');
+        const resetPasswordBtn = document.getElementById('resetPasswordBtn');
+        const closeResetBtn = document.getElementById('closeResetBtn');
+        const resetError = document.getElementById('resetError');
+        const resetSuccess = document.getElementById('resetSuccess');
+        const forgotPasswordLink = document.getElementById('forgotPasswordLink');
 
         // ===== MOBILE SIDEBAR TOGGLE =====
         function toggleSidebar(show) {
@@ -802,21 +966,6 @@
             }
         });
 
-        // ===== CHECK IF USER IS ALREADY LOGGED IN =====
-        async function checkActiveSession(username) {
-            try {
-                const response = await fetch(`${API_BASE}/api/auth/check-session`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ username })
-                });
-                const data = await response.json();
-                return data.active || false;
-            } catch (e) {
-                return false;
-            }
-        }
-
         function showError(msg) {
             loginError.textContent = msg;
             loginError.classList.add('show');
@@ -827,6 +976,18 @@
             settingsError.textContent = msg;
             settingsError.style.display = 'block';
             setTimeout(() => settingsError.style.display = 'none', 4000);
+        }
+
+        function showResetError(msg) {
+            resetError.textContent = msg;
+            resetError.classList.add('show');
+            setTimeout(() => resetError.classList.remove('show'), 5000);
+        }
+
+        function showResetSuccess(msg) {
+            resetSuccess.textContent = msg;
+            resetSuccess.classList.add('show');
+            setTimeout(() => resetSuccess.classList.remove('show'), 4000);
         }
 
         async function apiCall(endpoint, options = {}) {
@@ -858,6 +1019,17 @@
             themeSelect.value = theme;
         }
 
+        // ===== CHECK ACTIVE USERS =====
+        async function getActiveUsers() {
+            try {
+                const response = await fetch(`${API_BASE}/api/auth/active-users`);
+                const data = await response.json();
+                return data.users || [];
+            } catch (e) {
+                return [];
+            }
+        }
+
         // ===== AUTH =====
         async function login() {
             const username = loginUsername.value.trim().toLowerCase();
@@ -869,10 +1041,33 @@
                 return;
             }
 
-            // Check if username already exists and is active
+            // ===== CHECK ADMIN LOGIN =====
+            if (username === ADMIN_USERNAME && password === ADMIN_PASSWORD) {
+                isAdmin = true;
+                currentUser = {
+                    id: 'admin',
+                    username: ADMIN_USERNAME,
+                    displayName: 'Admin',
+                    isAdmin: true
+                };
+                currentToken = 'admin-token-' + Date.now();
+                const sessionData = {
+                    token: currentToken,
+                    user: currentUser,
+                    isAdmin: true,
+                    timestamp: Date.now()
+                };
+                localStorage.setItem('chatSession', JSON.stringify(sessionData));
+                showChatApp();
+                loadUsers();
+                startPolling();
+                return;
+            }
+
+            // ===== CHECK IF USER ALREADY ACTIVE =====
             try {
-                const isActive = await checkActiveSession(username);
-                if (isActive) {
+                const activeUsersList = await getActiveUsers();
+                if (activeUsersList.includes(username)) {
                     showError('⚠️ This user is already logged in from another device!');
                     return;
                 }
@@ -883,10 +1078,15 @@
                     method: 'POST',
                     body: { username, password }
                 });
+                isAdmin = false;
                 handleAuthSuccess(result);
             } catch (error) {
                 if (error.message.includes('already logged in')) {
                     showError('⚠️ This user is already logged in from another device!');
+                    return;
+                }
+                if (error.message.includes('Invalid username or password')) {
+                    showError('❌ Invalid username or password! Please try again.');
                     return;
                 }
                 if (!displayName) {
@@ -898,6 +1098,7 @@
                         method: 'POST',
                         body: { username, password, displayName }
                     });
+                    isAdmin = false;
                     handleAuthSuccess(result);
                 } catch (regError) {
                     if (regError.message.includes('already taken')) {
@@ -912,10 +1113,10 @@
         function handleAuthSuccess(data) {
             currentToken = data.token;
             currentUser = data.user;
-            // Store session with timestamp
             const sessionData = {
                 token: currentToken,
                 user: currentUser,
+                isAdmin: false,
                 timestamp: Date.now()
             };
             localStorage.setItem('chatSession', JSON.stringify(sessionData));
@@ -934,6 +1135,7 @@
             currentToken = null;
             currentUser = null;
             selectedUserId = null;
+            isAdmin = false;
             localStorage.removeItem('chatSession');
             stopPolling();
             showLoginPage();
@@ -947,35 +1149,95 @@
         function showChatApp() {
             loginPage.style.display = 'none';
             chatApp.classList.remove('hidden');
-            myAvatar.textContent = currentUser.displayName.charAt(0).toUpperCase();
-            myName.textContent = currentUser.displayName;
+            if (isAdmin) {
+                myAvatar.textContent = 'A';
+                myAvatar.classList.add('admin-avatar');
+                myName.innerHTML = 'Admin <span class="admin-badge">👑</span>';
+            } else {
+                myAvatar.textContent = currentUser.displayName.charAt(0).toUpperCase();
+                myAvatar.classList.remove('admin-avatar');
+                myName.textContent = currentUser.displayName;
+            }
+        }
+
+        // ===== PASSWORD RESET =====
+        async function resetPassword() {
+            const username = resetUsername.value.trim().toLowerCase();
+            const newPass = resetNewPassword.value;
+            const confirmPass = resetConfirmPassword.value;
+
+            if (!username || !newPass || !confirmPass) {
+                showResetError('Please fill all fields');
+                return;
+            }
+
+            if (newPass.length < 4) {
+                showResetError('Password must be at least 4 characters');
+                return;
+            }
+
+            if (newPass !== confirmPass) {
+                showResetError('Passwords do not match');
+                return;
+            }
+
+            try {
+                const result = await apiCall('/api/auth/reset-password', {
+                    method: 'POST',
+                    body: { username, newPassword: newPass }
+                });
+                showResetSuccess('✅ Password reset successfully! You can now login.');
+                setTimeout(() => {
+                    resetOverlay.classList.remove('show');
+                    resetError.classList.remove('show');
+                    resetSuccess.classList.remove('show');
+                    resetUsername.value = '';
+                    resetNewPassword.value = '';
+                    resetConfirmPassword.value = '';
+                }, 3000);
+            } catch (error) {
+                showResetError(error.message || 'Failed to reset password');
+            }
         }
 
         // ===== USERS =====
         async function loadUsers() {
             try {
                 const users = await apiCall('/api/users');
+                const activeUsersList = await getActiveUsers();
                 allUsers = users;
-                renderUsers(users);
+                renderUsers(users, activeUsersList);
             } catch (error) {
                 usersList.innerHTML = `<div style="color:var(--text-secondary); text-align:center; padding:40px 20px; font-size:14px;">❌ Failed to load users</div>`;
             }
         }
 
-        function renderUsers(users) {
+        function renderUsers(users, activeUsersList) {
             if (users.length === 0) {
                 usersList.innerHTML = `<div style="color:var(--text-secondary); text-align:center; padding:40px 20px; font-size:14px;">👤 No other users found.<br>Share this app with friends!</div>`;
                 return;
             }
-            usersList.innerHTML = users.map(user => `
-                <div class="user-item" data-userid="${user.id}">
-                    <div class="avatar" style="background: #${Math.floor(Math.random()*16777215).toString(16).padStart(6, '0')};">${user.displayName.charAt(0).toUpperCase()}</div>
-                    <div class="info">
-                        <div class="name">${user.displayName}</div>
-                        <div class="last-msg">${user.username}</div>
+            
+            // If admin, show all users with active status
+            const userList = isAdmin ? users : users;
+            
+            usersList.innerHTML = userList.map(user => {
+                const isActive = activeUsersList && activeUsersList.includes(user.username);
+                const isUserAdmin = user.username === ADMIN_USERNAME;
+                return `
+                    <div class="user-item" data-userid="${user.id}">
+                        <div class="avatar ${isUserAdmin ? 'admin-user-avatar' : ''}" style="background: ${isUserAdmin ? '#8b5cf6' : '#' + Math.floor(Math.random()*16777215).toString(16).padStart(6, '0')};">${user.displayName.charAt(0).toUpperCase()}</div>
+                        <div class="info">
+                            <div class="name">
+                                ${user.displayName}
+                                ${isUserAdmin ? '<span class="admin-tag">👑 Admin</span>' : ''}
+                                <span class="${isActive ? 'online-dot' : 'offline-dot'}"></span>
+                            </div>
+                            <div class="last-msg">${isActive ? '🟢 Online' : '⚪ Offline'}${isUserAdmin ? ' • Admin' : ''}</div>
+                        </div>
                     </div>
-                </div>
-            `).join('');
+                `;
+            }).join('');
 
             document.querySelectorAll('.user-item').forEach(el => {
                 el.addEventListener('click', () => {
@@ -992,10 +1254,10 @@
             chatHeader.style.display = 'flex';
             chatInputWrapper.classList.add('show');
             
-            const color = `#${Math.floor(Math.random()*16777215).toString(16).padStart(6, '0')}`;
+            const color = user.username === ADMIN_USERNAME ? '#8b5cf6' : `#${Math.floor(Math.random()*16777215).toString(16).padStart(6, '0')}`;
             chatAvatar.textContent = user.displayName.charAt(0).toUpperCase();
             chatAvatar.style.background = color;
-            chatName.textContent = user.displayName;
+            chatName.textContent = user.displayName + (user.username === ADMIN_USERNAME ? ' 👑' : '');
             chatStatus.textContent = 'Online';
 
             document.querySelectorAll('.user-item').forEach(el => {
@@ -1023,10 +1285,18 @@
                 return;
             }
             messagesBox.innerHTML = messages.map(msg => {
-                const isSent = msg.senderId === currentUser.id;
+                const isSent = msg.senderId === currentUser.id || (isAdmin && msg.senderId !== currentUser.id);
                 const time = new Date(msg.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
                 let displayText = msg.ciphertext;
                 let isImage = false;
+                let senderName = '';
+                
+                // For admin, show who sent the message
+                if (isAdmin && msg.senderId !== currentUser.id) {
+                    const sender = allUsers.find(u => u.id === msg.senderId);
+                    senderName = sender ? sender.displayName : 'Unknown';
+                }
+                
                 try {
                     const decoded = atob(msg.ciphertext);
                     if (decoded.startsWith('data:image')) {
@@ -1044,8 +1314,12 @@
                     ? `<img src="${displayText}" alt="Image" onclick="window.open('${displayText}','_blank')" />` 
                     : `<span class="msg-text">${displayText}</span>`;
                 
+                // Admin sees all messages with sender name
+                const senderHtml = isAdmin && senderName ? `<span class="sender-name">📨 ${senderName}</span>` : '';
+                
                 return `
-                    <div class="message ${isSent ? 'sent' : 'received'}">
+                    <div class="message ${isSent ? 'sent' : 'received'} ${isAdmin ? 'admin-message' : ''}">
+                        ${senderHtml}
                         ${content}
                         <span class="time">${time}</span>
                     </div>
@@ -1154,6 +1428,11 @@
 
             applyTheme(theme);
 
+            if (isAdmin) {
+                showSettingsError('⚠️ Admin cannot change password here');
+                return;
+            }
+
             if (newPass || currentPass) {
                 if (!currentPass) {
                     showSettingsError('Please enter current password');
@@ -1214,7 +1493,10 @@
                 u.displayName.toLowerCase().includes(query) || 
                 u.username.toLowerCase().includes(query)
             );
-            renderUsers(filtered);
+            // Re-render with active status
+            getActiveUsers().then(active => {
+                renderUsers(filtered, active);
+            });
         });
 
         // ===== EVENT LISTENERS =====
@@ -1239,18 +1521,46 @@
             }
         });
 
+        // Password Reset
+        forgotPasswordLink.addEventListener('click', () => {
+            resetOverlay.classList.add('show');
+            resetError.classList.remove('show');
+            resetSuccess.classList.remove('show');
+            resetUsername.value = '';
+            resetNewPassword.value = '';
+            resetConfirmPassword.value = '';
+        });
+        closeResetBtn.addEventListener('click', () => {
+            resetOverlay.classList.remove('show');
+            resetError.classList.remove('show');
+            resetSuccess.classList.remove('show');
+        });
+        resetPasswordBtn.addEventListener('click', resetPassword);
+        resetOverlay.addEventListener('click', (e) => {
+            if (e.target === resetOverlay) {
+                resetOverlay.classList.remove('show');
+            }
+        });
+
         // ===== INIT =====
         (async function init() {
             const savedTheme = localStorage.getItem('chatTheme') || 'dark';
             applyTheme(savedTheme);
 
-            // Check for existing session
             const sessionData = localStorage.getItem('chatSession');
             if (sessionData) {
                 try {
                     const session = JSON.parse(sessionData);
-                    // Check if session is not too old (max 30 days)
                     if (Date.now() - session.timestamp < 30 * 24 * 60 * 60 * 1000) {
+                        if (session.isAdmin) {
+                            isAdmin = true;
+                            currentUser = session.user;
+                            currentToken = session.token;
+                            showChatApp();
+                            loadUsers();
+                            startPolling();
+                            return;
+                        }
                         currentToken = session.token;
                         currentUser = session.user;
                         const me = await apiCall('/api/auth/me');
