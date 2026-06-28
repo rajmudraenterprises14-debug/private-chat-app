@@ -1,0 +1,445 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>🔒 Private Chat</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: system-ui, -apple-system, sans-serif; }
+        body { background: #0f172a; display: flex; justify-content: center; align-items: center; min-height: 100vh; padding: 20px; }
+        .container { background: #1e293b; border-radius: 24px; padding: 30px; max-width: 800px; width: 100%; box-shadow: 0 25px 50px -12px rgba(0,0,0,0.8); }
+        h1 { color: #f1f5f9; font-size: 28px; margin-bottom: 20px; display: flex; align-items: center; gap: 10px; }
+        .login-form, .chat-area { display: none; }
+        .login-form.active, .chat-area.active { display: block; }
+        .form-group { margin-bottom: 16px; }
+        label { color: #94a3b8; font-size: 14px; font-weight: 600; display: block; margin-bottom: 6px; }
+        input { width: 100%; padding: 12px 16px; border: 2px solid #334155; border-radius: 12px; background: #0f172a; color: #f1f5f9; font-size: 16px; transition: 0.3s; }
+        input:focus { outline: none; border-color: #6366f1; }
+        .btn { padding: 12px 24px; border: none; border-radius: 12px; font-weight: 600; cursor: pointer; transition: 0.3s; }
+        .btn-primary { background: #6366f1; color: white; width: 100%; font-size: 16px; }
+        .btn-primary:hover { background: #4f46e5; transform: translateY(-2px); }
+        .btn-danger { background: #ef4444; color: white; padding: 8px 16px; font-size: 13px; }
+        .btn-danger:hover { background: #dc2626; }
+        .btn-secondary { background: #334155; color: #e2e8f0; padding: 8px 16px; font-size: 13px; }
+        .btn-secondary:hover { background: #475569; }
+        .users-list { margin: 16px 0; display: flex; flex-wrap: wrap; gap: 12px; }
+        .user-card { background: #0f172a; padding: 12px 18px; border-radius: 12px; cursor: pointer; transition: 0.3s; border: 2px solid transparent; display: flex; align-items: center; gap: 10px; }
+        .user-card:hover { border-color: #6366f1; background: #1e293b; }
+        .user-card.active { border-color: #6366f1; background: #1e293b; }
+        .user-avatar { width: 36px; height: 36px; border-radius: 50%; background: #6366f1; display: flex; align-items: center; justify-content: center; font-weight: 700; color: white; }
+        .user-name { color: #e2e8f0; font-weight: 500; }
+        .messages-box { background: #0f172a; border-radius: 16px; padding: 16px; height: 400px; overflow-y: auto; margin: 16px 0; }
+        .message { margin-bottom: 12px; padding: 10px 14px; border-radius: 12px; max-width: 70%; word-wrap: break-word; }
+        .message.sent { background: #6366f1; color: white; margin-left: auto; }
+        .message.received { background: #334155; color: #e2e8f0; }
+        .message .time { font-size: 11px; opacity: 0.7; margin-top: 4px; display: block; }
+        .message .delete-btn { background: none; border: none; color: #fca5a5; cursor: pointer; font-size: 12px; margin-left: 8px; }
+        .chat-input { display: flex; gap: 12px; }
+        .chat-input input { flex: 1; }
+        .chat-input button { width: auto; padding: 12px 24px; }
+        .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; }
+        .user-info { display: flex; align-items: center; gap: 12px; color: #e2e8f0; }
+        .clear-btn { background: #ef4444; color: white; border: none; padding: 6px 14px; border-radius: 8px; cursor: pointer; font-size: 12px; }
+        .clear-btn:hover { background: #dc2626; }
+        .status { color: #94a3b8; font-size: 14px; text-align: center; padding: 10px; }
+        .error { background: #7f1d1d; color: #fca5a5; padding: 12px; border-radius: 12px; margin-bottom: 12px; display: none; }
+        .error.show { display: block; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔒 Private Chat</h1>
+        
+        <!-- Error Message -->
+        <div id="errorMsg" class="error"></div>
+
+        <!-- Login Form -->
+        <div id="loginForm" class="login-form active">
+            <div class="form-group">
+                <label>👤 Username</label>
+                <input type="text" id="username" placeholder="Choose a unique username" />
+            </div>
+            <div class="form-group">
+                <label>🔑 Password</label>
+                <input type="password" id="password" placeholder="Enter password" />
+            </div>
+            <div class="form-group">
+                <label>📛 Display Name</label>
+                <input type="text" id="displayName" placeholder="Your display name" />
+            </div>
+            <button class="btn btn-primary" id="loginBtn">Login / Register</button>
+            <p style="color: #94a3b8; font-size: 13px; margin-top: 12px; text-align: center;">
+                * If username doesn't exist, new account will be created
+            </p>
+        </div>
+
+        <!-- Chat Area -->
+        <div id="chatArea" class="chat-area">
+            <div class="header">
+                <div class="user-info">
+                    <div class="user-avatar" id="myAvatar">U</div>
+                    <span id="myName">User</span>
+                </div>
+                <button class="btn-secondary" id="logoutBtn">🚪 Logout</button>
+            </div>
+
+            <div id="usersContainer">
+                <div class="status">📡 Loading users...</div>
+                <div class="users-list" id="usersList"></div>
+            </div>
+
+            <div id="chatContainer" style="display: none;">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+                    <span id="chatWith" style="color: #e2e8f0; font-weight: 600;">Chatting with: </span>
+                    <button class="clear-btn" id="clearChatBtn">🗑️ Clear Chat</button>
+                </div>
+                <div class="messages-box" id="messagesBox"></div>
+                <div class="chat-input">
+                    <input type="text" id="messageInput" placeholder="Type a message..." />
+                    <button class="btn btn-primary" id="sendBtn" style="width: auto;">Send</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // ============================================================
+        // ✅ CHANGE THIS URL TO YOUR DEPLOYED BACKEND
+        // ============================================================
+        const API_BASE = 'https://your-app-name.glitch.me';  // <-- CHANGE THIS!
+        // For Render: https://your-app.onrender.com
+        // For Railway: https://your-app.up.railway.app
+
+        let currentUser = null;
+        let currentToken = null;
+        let selectedUserId = null;
+        let messageInterval = null;
+
+        // DOM Elements
+        const loginForm = document.getElementById('loginForm');
+        const chatArea = document.getElementById('chatArea');
+        const usernameInput = document.getElementById('username');
+        const passwordInput = document.getElementById('password');
+        const displayNameInput = document.getElementById('displayName');
+        const loginBtn = document.getElementById('loginBtn');
+        const logoutBtn = document.getElementById('logoutBtn');
+        const errorMsg = document.getElementById('errorMsg');
+        const usersList = document.getElementById('usersList');
+        const chatContainer = document.getElementById('chatContainer');
+        const chatWith = document.getElementById('chatWith');
+        const messagesBox = document.getElementById('messagesBox');
+        const messageInput = document.getElementById('messageInput');
+        const sendBtn = document.getElementById('sendBtn');
+        const clearChatBtn = document.getElementById('clearChatBtn');
+        const myAvatar = document.getElementById('myAvatar');
+        const myName = document.getElementById('myName');
+
+        // ============================================================
+        // ✅ ENCRYPTION HELPERS (Simple XOR - For demo, use proper AES in production)
+        // ============================================================
+        function generateKey(password, salt) {
+            const encoder = new TextEncoder();
+            const keyMaterial = encoder.encode(password + salt);
+            return crypto.subtle.digest('SHA-256', keyMaterial)
+                .then(hash => new Uint8Array(hash));
+        }
+
+        function encryptText(text, password, salt) {
+            const encoder = new TextEncoder();
+            const data = encoder.encode(text);
+            return generateKey(password, salt).then(key => {
+                const encrypted = data.map((byte, i) => byte ^ key[i % key.length]);
+                return btoa(String.fromCharCode(...encrypted));
+            });
+        }
+
+        function decryptText(ciphertext, password, salt) {
+            const encrypted = Uint8Array.from(atob(ciphertext), c => c.charCodeAt(0));
+            return generateKey(password, salt).then(key => {
+                const decrypted = encrypted.map((byte, i) => byte ^ key[i % key.length]);
+                return new TextDecoder().decode(decrypted);
+            });
+        }
+
+        // ============================================================
+        // ✅ API HELPERS
+        // ============================================================
+        function showError(msg) {
+            errorMsg.textContent = msg;
+            errorMsg.classList.add('show');
+            setTimeout(() => errorMsg.classList.remove('show'), 5000);
+        }
+
+        async function apiCall(endpoint, options = {}) {
+            const url = `${API_BASE}${endpoint}`;
+            const headers = {
+                'Content-Type': 'application/json',
+                ...options.headers
+            };
+            if (currentToken) {
+                headers['Authorization'] = `Bearer ${currentToken}`;
+            }
+            const response = await fetch(url, {
+                ...options,
+                headers,
+                body: options.body ? JSON.stringify(options.body) : undefined
+            });
+            if (!response.ok) {
+                const error = await response.json();
+                throw new Error(error.error || 'API request failed');
+            }
+            return response.json();
+        }
+
+        // ============================================================
+        // ✅ AUTH FUNCTIONS
+        // ============================================================
+        async function login() {
+            const username = usernameInput.value.trim().toLowerCase();
+            const password = passwordInput.value;
+            const displayName = displayNameInput.value.trim();
+
+            if (!username || !password) {
+                showError('Please enter username and password');
+                return;
+            }
+
+            try {
+                // Try to login first
+                let result = await apiCall('/api/auth/login', {
+                    method: 'POST',
+                    body: { username, password }
+                });
+                handleAuthSuccess(result);
+            } catch (error) {
+                // If login fails, register new user
+                if (!displayName) {
+                    showError('Please enter a display name to create new account');
+                    return;
+                }
+                try {
+                    const result = await apiCall('/api/auth/register', {
+                        method: 'POST',
+                        body: { username, password, displayName }
+                    });
+                    handleAuthSuccess(result);
+                } catch (regError) {
+                    showError(regError.message);
+                }
+            }
+        }
+
+        function handleAuthSuccess(data) {
+            currentToken = data.token;
+            currentUser = data.user;
+            localStorage.setItem('chatToken', currentToken);
+            localStorage.setItem('chatUser', JSON.stringify(currentUser));
+            showChatArea();
+            loadUsers();
+            startPolling();
+        }
+
+        function logout() {
+            currentToken = null;
+            currentUser = null;
+            selectedUserId = null;
+            localStorage.removeItem('chatToken');
+            localStorage.removeItem('chatUser');
+            stopPolling();
+            showLoginForm();
+        }
+
+        function showLoginForm() {
+            loginForm.classList.add('active');
+            chatArea.classList.remove('active');
+        }
+
+        function showChatArea() {
+            loginForm.classList.remove('active');
+            chatArea.classList.add('active');
+            myAvatar.textContent = currentUser.displayName.charAt(0).toUpperCase();
+            myName.textContent = currentUser.displayName;
+        }
+
+        // ============================================================
+        // ✅ USER MANAGEMENT
+        // ============================================================
+        async function loadUsers() {
+            try {
+                const users = await apiCall('/api/users');
+                if (users.length === 0) {
+                    usersList.innerHTML = '<div class="status">No other users found. Share this app with friends!</div>';
+                    return;
+                }
+                usersList.innerHTML = users.map(user => `
+                    <div class="user-card" data-userid="${user.id}">
+                        <div class="user-avatar" style="background: #8b5cf6;">${user.displayName.charAt(0).toUpperCase()}</div>
+                        <span class="user-name">${user.displayName}</span>
+                    </div>
+                `).join('');
+
+                document.querySelectorAll('.user-card').forEach(el => {
+                    el.addEventListener('click', () => {
+                        const userId = el.dataset.userid;
+                        const user = users.find(u => u.id === userId);
+                        selectUser(userId, user);
+                    });
+                });
+            } catch (error) {
+                showError('Failed to load users: ' + error.message);
+            }
+        }
+
+        function selectUser(userId, user) {
+            selectedUserId = userId;
+            chatContainer.style.display = 'block';
+            chatWith.textContent = `Chatting with: ${user.displayName}`;
+            document.querySelectorAll('.user-card').forEach(el => {
+                el.classList.toggle('active', el.dataset.userid === userId);
+            });
+            loadMessages();
+        }
+
+        // ============================================================
+        // ✅ MESSAGES
+        // ============================================================
+        async function loadMessages() {
+            if (!selectedUserId) return;
+            try {
+                const messages = await apiCall(`/api/messages?withUserId=${selectedUserId}`);
+                renderMessages(messages);
+            } catch (error) {
+                showError('Failed to load messages: ' + error.message);
+            }
+        }
+
+        function renderMessages(messages) {
+            if (messages.length === 0) {
+                messagesBox.innerHTML = '<div class="status">No messages yet. Say hello! 👋</div>';
+                return;
+            }
+            messagesBox.innerHTML = messages.map(msg => {
+                const isSent = msg.senderId === currentUser.id;
+                const time = new Date(msg.timestamp).toLocaleTimeString();
+                // Decrypt message (demo - using simple key)
+                const salt = currentUser.id + msg.senderId + msg.receiverId;
+                // For demo, we'll show encrypted as-is, in real app decrypt here
+                // This is simplified - in production use proper shared secret
+                return `
+                    <div class="message ${isSent ? 'sent' : 'received'}">
+                        ${msg.ciphertext} <!-- In real app, decrypt this -->
+                        <span class="time">${time}</span>
+                        ${isSent ? `<button class="delete-btn" data-msgid="${msg.id}">🗑️</button>` : ''}
+                    </div>
+                `;
+            }).join('');
+            messagesBox.scrollTop = messagesBox.scrollHeight;
+
+            // Add delete handlers
+            document.querySelectorAll('.delete-btn').forEach(btn => {
+                btn.addEventListener('click', async () => {
+                    const msgId = btn.dataset.msgid;
+                    if (confirm('Delete this message?')) {
+                        // In a real app, call delete endpoint
+                        // For demo, we'll just reload
+                        loadMessages();
+                    }
+                });
+            });
+        }
+
+        async function sendMessage() {
+            const text = messageInput.value.trim();
+            if (!text || !selectedUserId) return;
+
+            try {
+                // In real app, encrypt here with shared secret
+                const ciphertext = btoa(text); // Simple base64 for demo
+                const iv = crypto.randomUUID();
+                
+                await apiCall('/api/messages', {
+                    method: 'POST',
+                    body: {
+                        receiverId: selectedUserId,
+                        ciphertext,
+                        iv
+                    }
+                });
+                messageInput.value = '';
+                loadMessages();
+            } catch (error) {
+                showError('Failed to send message: ' + error.message);
+            }
+        }
+
+        async function clearChat() {
+            if (!selectedUserId) return;
+            if (!confirm('Delete all messages with this user?')) return;
+            try {
+                await apiCall('/api/messages/clear', {
+                    method: 'POST',
+                    body: { withUserId: selectedUserId }
+                });
+                loadMessages();
+            } catch (error) {
+                showError('Failed to clear chat: ' + error.message);
+            }
+        }
+
+        // ============================================================
+        // ✅ POLLING (Auto-refresh messages)
+        // ============================================================
+        function startPolling() {
+            stopPolling();
+            messageInterval = setInterval(() => {
+                if (selectedUserId) {
+                    loadMessages();
+                }
+                loadUsers();
+            }, 3000);
+        }
+
+        function stopPolling() {
+            if (messageInterval) {
+                clearInterval(messageInterval);
+                messageInterval = null;
+            }
+        }
+
+        // ============================================================
+        // ✅ EVENT LISTENERS
+        // ============================================================
+        loginBtn.addEventListener('click', login);
+        passwordInput.addEventListener('keypress', (e) => e.key === 'Enter' && login());
+        logoutBtn.addEventListener('click', logout);
+        sendBtn.addEventListener('click', sendMessage);
+        messageInput.addEventListener('keypress', (e) => e.key === 'Enter' && sendMessage());
+        clearChatBtn.addEventListener('click', clearChat);
+
+        // ============================================================
+        // ✅ CHECK SAVED SESSION
+        // ============================================================
+        (async function init() {
+            const savedToken = localStorage.getItem('chatToken');
+            const savedUser = localStorage.getItem('chatUser');
+            if (savedToken && savedUser) {
+                try {
+                    currentToken = savedToken;
+                    currentUser = JSON.parse(savedUser);
+                    const me = await apiCall('/api/auth/me');
+                    if (me.user) {
+                        showChatArea();
+                        loadUsers();
+                        startPolling();
+                        return;
+                    }
+                } catch (e) {
+                    localStorage.removeItem('chatToken');
+                    localStorage.removeItem('chatUser');
+                }
+            }
+            showLoginForm();
+        })();
+    </script>
+</body>
+</html>
