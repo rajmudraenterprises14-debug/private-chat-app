@@ -655,6 +655,29 @@
         
         .hidden { display: none !important; }
         
+        /* ===== LOADING OVERLAY ===== */
+        .loading-overlay {
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(11, 20, 26, 0.95);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 9999;
+            color: var(--text-primary);
+            gap: 16px;
+        }
+        .loading-overlay .spinner {
+            width: 48px; height: 48px;
+            border: 4px solid var(--border-color);
+            border-top-color: var(--accent);
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+        }
+        @keyframes spin { to { transform: rotate(360deg); } }
+        .loading-overlay.hidden { display: none; }
+        
         /* ===== SETTINGS MODAL ===== */
         .settings-overlay { 
             display: none; 
@@ -807,180 +830,185 @@
     </style>
 </head>
 <body>
-    <div id="app">
-        <!-- ===== LOGIN PAGE ===== -->
-        <div id="loginPage" class="login-container">
-            <div class="login-box">
-                <div class="logo">💬</div>
-                <h1>Private Chat</h1>
-                <p class="subtitle">Secure & Encrypted Messaging</p>
-                <div id="loginError" class="error"></div>
-                <div id="loginSuccess" class="success"></div>
-                <div class="form-group">
-                    <label>👤 Username</label>
-                    <input type="text" id="loginUsername" placeholder="Choose a unique username" />
+    <!-- ===== LOADING OVERLAY ===== -->
+    <div class="loading-overlay" id="loadingOverlay">
+        <div class="spinner"></div>
+        <p>🔄 Connecting to server...</p>
+        <p style="font-size:12px; opacity:0.6;">Please wait a moment</p>
+    </div>
+
+    <!-- ===== LOGIN PAGE ===== -->
+    <div id="loginPage" class="login-container">
+        <div class="login-box">
+            <div class="logo">💬</div>
+            <h1>Private Chat</h1>
+            <p class="subtitle">Secure & Encrypted Messaging</p>
+            <div id="loginError" class="error"></div>
+            <div id="loginSuccess" class="success"></div>
+            <div class="form-group">
+                <label>👤 Username</label>
+                <input type="text" id="loginUsername" placeholder="Choose a unique username" />
+            </div>
+            <div class="form-group">
+                <label>🔑 Password</label>
+                <input type="password" id="loginPassword" placeholder="Enter password" />
+            </div>
+            <div class="form-group">
+                <label>📛 Display Name</label>
+                <input type="text" id="loginDisplayName" placeholder="Your display name" />
+            </div>
+            <button class="login-btn" id="loginBtn">Login / Register</button>
+            <p class="footer-text" id="forgotPasswordLink">🔑 Forgot Password? Reset it here</p>
+            <p class="footer-text" style="margin-top: 4px; font-size: 11px; opacity: 0.6;">* New account will be created if username doesn't exist</p>
+            <p class="footer-text" style="margin-top: 8px; font-size: 11px; color: var(--admin-color);">👑 Admin: render / render.com</p>
+        </div>
+    </div>
+
+    <!-- ===== CHAT APP ===== -->
+    <div id="chatApp" class="app-container hidden">
+        <!-- Sidebar -->
+        <div class="sidebar" id="sidebar">
+            <div class="sidebar-header">
+                <div class="user-info">
+                    <div class="avatar" id="myAvatar">U</div>
+                    <span class="name" id="myName">User</span>
                 </div>
-                <div class="form-group">
-                    <label>🔑 Password</label>
-                    <input type="password" id="loginPassword" placeholder="Enter password" />
+                <div class="header-actions">
+                    <button id="settingsBtn" title="Settings">⚙️</button>
+                    <button id="logoutBtn" title="Logout">🚪</button>
                 </div>
-                <div class="form-group">
-                    <label>📛 Display Name</label>
-                    <input type="text" id="loginDisplayName" placeholder="Your display name" />
+            </div>
+            <div class="search-box">
+                <div class="search-wrapper">
+                    <span>🔍</span>
+                    <input type="text" id="searchUsers" placeholder="Search or start a new chat" />
                 </div>
-                <button class="login-btn" id="loginBtn">Login / Register</button>
-                <p class="footer-text" id="forgotPasswordLink">🔑 Forgot Password? Reset it here</p>
-                <p class="footer-text" style="margin-top: 4px; font-size: 11px; opacity: 0.6;">* New account will be created if username doesn't exist</p>
-                <p class="footer-text" style="margin-top: 8px; font-size: 11px; color: var(--admin-color);">👑 Admin: render / render.com</p>
+            </div>
+            <div class="users-list" id="usersList">
+                <div style="color:var(--text-secondary); text-align:center; padding:40px 20px; font-size:14px;">📡 Loading users...</div>
             </div>
         </div>
 
-        <!-- ===== CHAT APP ===== -->
-        <div id="chatApp" class="app-container hidden">
-            <!-- Sidebar -->
-            <div class="sidebar" id="sidebar">
-                <div class="sidebar-header">
-                    <div class="user-info">
-                        <div class="avatar" id="myAvatar">U</div>
-                        <span class="name" id="myName">User</span>
-                    </div>
-                    <div class="header-actions">
-                        <button id="settingsBtn" title="Settings">⚙️</button>
-                        <button id="logoutBtn" title="Logout">🚪</button>
-                    </div>
+        <!-- Chat Area -->
+        <div class="chat-area" id="chatArea">
+            <div class="chat-header" id="chatHeader" style="display:none;">
+                <button class="back-btn" id="backBtn" title="Back">←</button>
+                <div class="avatar" id="chatAvatar" style="background:#25d366;">?</div>
+                <div class="info">
+                    <div class="name" id="chatName">Select a user</div>
+                    <div class="status" id="chatStatus">Online</div>
                 </div>
-                <div class="search-box">
-                    <div class="search-wrapper">
-                        <span>🔍</span>
-                        <input type="text" id="searchUsers" placeholder="Search or start a new chat" />
-                    </div>
-                </div>
-                <div class="users-list" id="usersList">
-                    <div style="color:var(--text-secondary); text-align:center; padding:40px 20px; font-size:14px;">📡 Loading users...</div>
+                <div class="actions">
+                    <button class="reset-pwd-btn" id="resetPwdBtn" title="Reset Password" style="display:none;">🔑</button>
+                    <button class="delete-user-btn" id="deleteUserBtn" title="Delete User" style="display:none;">🗑️ Delete</button>
+                    <button class="clear-btn" id="clearChatBtn" title="Clear chat">🗑️</button>
                 </div>
             </div>
-
-            <!-- Chat Area -->
-            <div class="chat-area" id="chatArea">
-                <div class="chat-header" id="chatHeader" style="display:none;">
-                    <button class="back-btn" id="backBtn" title="Back">←</button>
-                    <div class="avatar" id="chatAvatar" style="background:#25d366;">?</div>
-                    <div class="info">
-                        <div class="name" id="chatName">Select a user</div>
-                        <div class="status" id="chatStatus">Online</div>
-                    </div>
-                    <div class="actions">
-                        <button class="reset-pwd-btn" id="resetPwdBtn" title="Reset Password" style="display:none;">🔑</button>
-                        <button class="delete-user-btn" id="deleteUserBtn" title="Delete User" style="display:none;">🗑️ Delete</button>
-                        <button class="clear-btn" id="clearChatBtn" title="Clear chat">🗑️</button>
-                    </div>
+            <div class="messages-box" id="messagesBox">
+                <div class="empty-state">
+                    <div class="icon">💬</div>
+                    <h3>Select a user to start chatting</h3>
+                    <p>Choose a contact from the sidebar</p>
                 </div>
-                <div class="messages-box" id="messagesBox">
-                    <div class="empty-state">
-                        <div class="icon">💬</div>
-                        <h3>Select a user to start chatting</h3>
-                        <p>Choose a contact from the sidebar</p>
-                    </div>
+            </div>
+            <div class="chat-input-wrapper" id="chatInputWrapper">
+                <div class="image-preview" id="imagePreview">
+                    <img id="previewImg" src="" alt="Preview" />
+                    <button class="remove-btn" id="removeImageBtn">✕ Remove</button>
                 </div>
-                <div class="chat-input-wrapper" id="chatInputWrapper">
-                    <div class="image-preview" id="imagePreview">
-                        <img id="previewImg" src="" alt="Preview" />
-                        <button class="remove-btn" id="removeImageBtn">✕ Remove</button>
-                    </div>
-                    <div class="chat-input" id="chatInput">
-                        <button class="attach-btn" id="attachBtn" title="Attach Image">📎</button>
-                        <input type="file" id="fileInput" accept="image/*" style="display:none;" />
-                        <button class="attach-btn" id="cameraBtn" title="Take Photo">📷</button>
-                        <input type="file" id="cameraInput" accept="image/*" capture="environment" style="display:none;" />
-                        <input type="text" id="messageInput" placeholder="Type a message..." />
-                        <button class="send-btn" id="sendBtn">Send</button>
-                    </div>
+                <div class="chat-input" id="chatInput">
+                    <button class="attach-btn" id="attachBtn" title="Attach Image">📎</button>
+                    <input type="file" id="fileInput" accept="image/*" style="display:none;" />
+                    <button class="attach-btn" id="cameraBtn" title="Take Photo">📷</button>
+                    <input type="file" id="cameraInput" accept="image/*" capture="environment" style="display:none;" />
+                    <input type="text" id="messageInput" placeholder="Type a message..." />
+                    <button class="send-btn" id="sendBtn">Send</button>
                 </div>
             </div>
         </div>
+    </div>
 
-        <!-- ===== SETTINGS MODAL ===== -->
-        <div class="settings-overlay" id="settingsOverlay">
-            <div class="settings-modal">
-                <h2>⚙️ Settings</h2>
-                <div class="form-group">
-                    <label>Current Password</label>
-                    <input type="password" id="currentPassword" placeholder="Enter current password" />
-                </div>
-                <div class="form-group">
-                    <label>New Password</label>
-                    <input type="password" id="newPassword" placeholder="Enter new password" />
-                </div>
-                <div class="form-group">
-                    <label>Confirm New Password</label>
-                    <input type="password" id="confirmPassword" placeholder="Confirm new password" />
-                </div>
-                <div class="form-group">
-                    <label>Theme</label>
-                    <select id="themeSelect">
-                        <option value="dark">Dark</option>
-                        <option value="light">Light</option>
-                    </select>
-                </div>
-                <div id="settingsError" style="color:#f5a5a5; font-size:13px; margin-bottom:8px; display:none;"></div>
-                <div class="modal-actions">
-                    <button class="save-btn" id="saveSettingsBtn">Save</button>
-                    <button class="close-btn" id="closeSettingsBtn">Close</button>
-                </div>
+    <!-- ===== SETTINGS MODAL ===== -->
+    <div class="settings-overlay" id="settingsOverlay">
+        <div class="settings-modal">
+            <h2>⚙️ Settings</h2>
+            <div class="form-group">
+                <label>Current Password</label>
+                <input type="password" id="currentPassword" placeholder="Enter current password" />
+            </div>
+            <div class="form-group">
+                <label>New Password</label>
+                <input type="password" id="newPassword" placeholder="Enter new password" />
+            </div>
+            <div class="form-group">
+                <label>Confirm New Password</label>
+                <input type="password" id="confirmPassword" placeholder="Confirm new password" />
+            </div>
+            <div class="form-group">
+                <label>Theme</label>
+                <select id="themeSelect">
+                    <option value="dark">Dark</option>
+                    <option value="light">Light</option>
+                </select>
+            </div>
+            <div id="settingsError" style="color:#f5a5a5; font-size:13px; margin-bottom:8px; display:none;"></div>
+            <div class="modal-actions">
+                <button class="save-btn" id="saveSettingsBtn">Save</button>
+                <button class="close-btn" id="closeSettingsBtn">Close</button>
             </div>
         </div>
+    </div>
 
-        <!-- ===== PASSWORD RESET MODAL (User Self Reset) ===== -->
-        <div class="reset-overlay" id="resetOverlay">
-            <div class="reset-modal">
-                <h2>🔑 Reset Password</h2>
-                <p class="reset-desc">Enter your username to reset your password.</p>
-                <div id="resetError" class="reset-error"></div>
-                <div id="resetSuccess" class="reset-success"></div>
-                <div class="form-group">
-                    <label>👤 Username</label>
-                    <input type="text" id="resetUsername" placeholder="Enter your username" />
-                </div>
-                <div class="form-group">
-                    <label>New Password</label>
-                    <input type="password" id="resetNewPassword" placeholder="Enter new password" />
-                </div>
-                <div class="form-group">
-                    <label>Confirm New Password</label>
-                    <input type="password" id="resetConfirmPassword" placeholder="Confirm new password" />
-                </div>
-                <div class="modal-actions">
-                    <button class="reset-btn" id="resetPasswordBtn">Reset Password</button>
-                    <button class="close-btn" id="closeResetBtn">Cancel</button>
-                </div>
+    <!-- ===== USER SELF RESET MODAL ===== -->
+    <div class="reset-overlay" id="resetOverlay">
+        <div class="reset-modal">
+            <h2>🔑 Reset Password</h2>
+            <p class="reset-desc">Enter your username to reset your password.</p>
+            <div id="resetError" class="reset-error"></div>
+            <div id="resetSuccess" class="reset-success"></div>
+            <div class="form-group">
+                <label>👤 Username</label>
+                <input type="text" id="resetUsername" placeholder="Enter your username" />
+            </div>
+            <div class="form-group">
+                <label>New Password</label>
+                <input type="password" id="resetNewPassword" placeholder="Enter new password" />
+            </div>
+            <div class="form-group">
+                <label>Confirm New Password</label>
+                <input type="password" id="resetConfirmPassword" placeholder="Confirm new password" />
+            </div>
+            <div class="modal-actions">
+                <button class="reset-btn" id="resetPasswordBtn">Reset Password</button>
+                <button class="close-btn" id="closeResetBtn">Cancel</button>
             </div>
         </div>
+    </div>
 
-        <!-- ===== ADMIN RESET PASSWORD MODAL ===== -->
-        <div class="admin-reset-overlay" id="adminResetOverlay">
-            <div class="admin-reset-modal">
-                <h2>🔑 Admin: Reset Password</h2>
-                <p class="reset-desc">Reset password for the selected user.</p>
-                <div class="user-info-box">
-                    <div class="label">Username</div>
-                    <div class="value" id="adminResetUsername">-</div>
-                    <div class="label" style="margin-top:6px;">Display Name</div>
-                    <div class="value" id="adminResetDisplayName">-</div>
-                </div>
-                <div id="adminResetError" class="reset-error"></div>
-                <div id="adminResetSuccess" class="reset-success"></div>
-                <div class="form-group">
-                    <label>New Password</label>
-                    <input type="password" id="adminNewPassword" placeholder="Enter new password" />
-                </div>
-                <div class="form-group">
-                    <label>Confirm New Password</label>
-                    <input type="password" id="adminConfirmPassword" placeholder="Confirm new password" />
-                </div>
-                <div class="modal-actions">
-                    <button class="reset-btn" id="adminResetBtn">Reset Password</button>
-                    <button class="close-btn" id="closeAdminResetBtn">Cancel</button>
-                </div>
+    <!-- ===== ADMIN RESET MODAL ===== -->
+    <div class="admin-reset-overlay" id="adminResetOverlay">
+        <div class="admin-reset-modal">
+            <h2>🔑 Admin: Reset Password</h2>
+            <p class="reset-desc">Reset password for the selected user.</p>
+            <div class="user-info-box">
+                <div class="label">Username</div>
+                <div class="value" id="adminResetUsername">-</div>
+                <div class="label" style="margin-top:6px;">Display Name</div>
+                <div class="value" id="adminResetDisplayName">-</div>
+            </div>
+            <div id="adminResetError" class="reset-error"></div>
+            <div id="adminResetSuccess" class="reset-success"></div>
+            <div class="form-group">
+                <label>New Password</label>
+                <input type="password" id="adminNewPassword" placeholder="Enter new password" />
+            </div>
+            <div class="form-group">
+                <label>Confirm New Password</label>
+                <input type="password" id="adminConfirmPassword" placeholder="Confirm new password" />
+            </div>
+            <div class="modal-actions">
+                <button class="reset-btn" id="adminResetBtn">Reset Password</button>
+                <button class="close-btn" id="closeAdminResetBtn">Cancel</button>
             </div>
         </div>
     </div>
@@ -991,7 +1019,7 @@
         // ============================================================
         const API_BASE = 'https://private-chat-app-a5el.onrender.com';
 
-        // ===== ADMIN CREDENTIALS (FIXED - DO NOT CHANGE) =====
+        // ===== ADMIN CREDENTIALS =====
         const ADMIN_USERNAME = 'render';
         const ADMIN_PASSWORD = 'render.com';
 
@@ -1005,6 +1033,7 @@
         let currentTheme = 'dark';
         let isMobile = window.innerWidth <= 768;
         let isAdmin = false;
+        let keepAliveInterval = null;
 
         // DOM Elements
         const loginPage = document.getElementById('loginPage');
@@ -1049,7 +1078,8 @@
         const removeImageBtn = document.getElementById('removeImageBtn');
         const sidebar = document.getElementById('sidebar');
         const backBtn = document.getElementById('backBtn');
-        
+        const loadingOverlay = document.getElementById('loadingOverlay');
+
         // Reset Modals
         const resetOverlay = document.getElementById('resetOverlay');
         const resetUsername = document.getElementById('resetUsername');
@@ -1061,7 +1091,7 @@
         const resetSuccess = document.getElementById('resetSuccess');
         const forgotPasswordLink = document.getElementById('forgotPasswordLink');
 
-        // Admin Reset Modal
+        // Admin Reset
         const adminResetOverlay = document.getElementById('adminResetOverlay');
         const adminResetUsername = document.getElementById('adminResetUsername');
         const adminResetDisplayName = document.getElementById('adminResetDisplayName');
@@ -1072,96 +1102,34 @@
         const adminResetError = document.getElementById('adminResetError');
         const adminResetSuccess = document.getElementById('adminResetSuccess');
 
-        // ===== MOBILE SIDEBAR TOGGLE =====
-        function toggleSidebar(show) {
-            if (!isMobile) return;
-            if (show === false) {
-                sidebar.classList.add('hidden-sidebar');
-            } else {
-                sidebar.classList.remove('hidden-sidebar');
+        // ===== LOADING =====
+        function showLoading() {
+            loadingOverlay.classList.remove('hidden');
+        }
+        function hideLoading() {
+            loadingOverlay.classList.add('hidden');
+        }
+
+        // ===== KEEP ALIVE =====
+        function startKeepAlive() {
+            stopKeepAlive();
+            keepAliveInterval = setInterval(() => {
+                if (currentToken) {
+                    fetch(`${API_BASE}/api/auth/me`, {
+                        headers: { 'Authorization': `Bearer ${currentToken}` }
+                    }).catch(() => {});
+                }
+            }, 240000);
+        }
+        function stopKeepAlive() {
+            if (keepAliveInterval) {
+                clearInterval(keepAliveInterval);
+                keepAliveInterval = null;
             }
         }
 
-        function showChatOnMobile() {
-            if (isMobile) toggleSidebar(false);
-        }
-
-        function showSidebarOnMobile() {
-            if (isMobile) toggleSidebar(true);
-        }
-
-        backBtn.addEventListener('click', () => {
-            showSidebarOnMobile();
-            selectedUserId = null;
-            selectedUserObj = null;
-            chatHeader.style.display = 'none';
-            chatInputWrapper.classList.remove('show');
-            resetPwdBtn.style.display = 'none';
-            deleteUserBtn.style.display = 'none';
-            messagesBox.innerHTML = `<div class="empty-state"><div class="icon">💬</div><h3>Select a user to start chatting</h3><p>Choose a contact from the sidebar</p></div>`;
-        });
-
-        window.addEventListener('resize', () => {
-            isMobile = window.innerWidth <= 768;
-            if (!isMobile) sidebar.classList.remove('hidden-sidebar');
-        });
-
-        // ===== AUTO LOGOUT ON TAB CLOSE =====
-        window.addEventListener('beforeunload', function() {
-            if (currentToken) {
-                navigator.sendBeacon(`${API_BASE}/api/auth/logout`, JSON.stringify({ token: currentToken }));
-            }
-        });
-
-        function showError(msg) {
-            loginError.textContent = msg;
-            loginError.classList.add('show');
-            loginSuccess.classList.remove('show');
-            setTimeout(() => loginError.classList.remove('show'), 5000);
-        }
-
-        function showSuccess(msg) {
-            loginSuccess.textContent = msg;
-            loginSuccess.classList.add('show');
-            loginError.classList.remove('show');
-            setTimeout(() => loginSuccess.classList.remove('show'), 4000);
-        }
-
-        function showSettingsError(msg) {
-            settingsError.textContent = msg;
-            settingsError.style.display = 'block';
-            setTimeout(() => settingsError.style.display = 'none', 4000);
-        }
-
-        function showResetError(msg) {
-            resetError.textContent = msg;
-            resetError.classList.add('show');
-            resetSuccess.classList.remove('show');
-            setTimeout(() => resetError.classList.remove('show'), 5000);
-        }
-
-        function showResetSuccess(msg) {
-            resetSuccess.textContent = msg;
-            resetSuccess.classList.add('show');
-            resetError.classList.remove('show');
-            setTimeout(() => resetSuccess.classList.remove('show'), 4000);
-        }
-
-        function showAdminResetError(msg) {
-            adminResetError.textContent = msg;
-            adminResetError.classList.add('show');
-            adminResetSuccess.classList.remove('show');
-            setTimeout(() => adminResetError.classList.remove('show'), 5000);
-        }
-
-        function showAdminResetSuccess(msg) {
-            adminResetSuccess.textContent = msg;
-            adminResetSuccess.classList.add('show');
-            adminResetError.classList.remove('show');
-            setTimeout(() => adminResetSuccess.classList.remove('show'), 4000);
-        }
-
-        async function apiCall(endpoint, options = {}) {
+        // ===== API CALL WITH RETRY =====
+        async function apiCall(endpoint, options = {}, retries = 3) {
             const url = `${API_BASE}${endpoint}`;
             const headers = {
                 'Content-Type': 'application/json',
@@ -1170,16 +1138,24 @@
             if (currentToken) {
                 headers['Authorization'] = `Bearer ${currentToken}`;
             }
-            const response = await fetch(url, {
-                ...options,
-                headers,
-                body: options.body ? JSON.stringify(options.body) : undefined
-            });
-            if (!response.ok) {
-                const error = await response.json();
-                throw new Error(error.error || 'API request failed');
+
+            for (let i = 0; i < retries; i++) {
+                try {
+                    const response = await fetch(url, {
+                        ...options,
+                        headers,
+                        body: options.body ? JSON.stringify(options.body) : undefined
+                    });
+                    if (!response.ok) {
+                        const error = await response.json();
+                        throw new Error(error.error || 'API request failed');
+                    }
+                    return await response.json();
+                } catch (error) {
+                    if (i === retries - 1) throw error;
+                    await new Promise(resolve => setTimeout(resolve, 2000 * (i + 1)));
+                }
             }
-            return response.json();
         }
 
         // ===== THEME =====
@@ -1190,7 +1166,7 @@
             themeSelect.value = theme;
         }
 
-        // ===== CHECK ACTIVE USERS =====
+        // ===== ACTIVE USERS =====
         async function getActiveUsers() {
             try {
                 const response = await fetch(`${API_BASE}/api/auth/active-users`);
@@ -1201,7 +1177,7 @@
             }
         }
 
-        // ===== DELETE USER (Admin only) =====
+        // ===== DELETE USER (Admin) =====
         async function deleteUser(userId) {
             if (!isAdmin) return;
             if (!userId) return;
@@ -1225,7 +1201,6 @@
                     throw new Error(error.error || 'Failed to delete user');
                 }
                 alert(`✅ User "${user.displayName}" deleted successfully!`);
-                // If currently selected user is deleted, clear chat
                 if (selectedUserId === userId) {
                     selectedUserId = null;
                     selectedUserObj = null;
@@ -1235,7 +1210,7 @@
                     deleteUserBtn.style.display = 'none';
                     messagesBox.innerHTML = `<div class="empty-state"><div class="icon">💬</div><h3>Select a user to start chatting</h3><p>Choose a contact from the sidebar</p></div>`;
                 }
-                loadUsers(); // refresh list
+                loadUsers();
             } catch (error) {
                 alert('❌ Failed to delete user: ' + error.message);
             }
@@ -1243,6 +1218,7 @@
 
         // ===== AUTH =====
         async function login() {
+            showLoading();
             const username = loginUsername.value.trim().toLowerCase();
             const password = loginPassword.value;
             const displayName = loginDisplayName.value.trim();
@@ -1252,7 +1228,7 @@
                 return;
             }
 
-            // ===== CHECK ADMIN LOGIN =====
+            // Admin login
             if (username === ADMIN_USERNAME && password === ADMIN_PASSWORD) {
                 isAdmin = true;
                 currentUser = {
@@ -1274,11 +1250,12 @@
                     showChatApp();
                     loadUsers();
                     startPolling();
+                    startKeepAlive();
+                    hideLoading();
                 }, 500);
                 return;
             }
 
-            // ===== CHECK IF USER ALREADY ACTIVE =====
             try {
                 const activeUsersList = await getActiveUsers();
                 if (activeUsersList.includes(username)) {
@@ -1300,12 +1277,10 @@
             } catch (error) {
                 if (error.message.includes('Invalid username or password') || 
                     error.message.includes('User not found')) {
-                    
                     if (!displayName) {
                         showError('Please enter a display name to create new account');
                         return;
                     }
-                    
                     try {
                         const result = await apiCall('/api/auth/register', {
                             method: 'POST',
@@ -1333,6 +1308,7 @@
                     showError(error.message || 'Login failed. Please try again.');
                 }
             }
+            hideLoading();
         }
 
         function handleAuthSuccess(data) {
@@ -1345,9 +1321,15 @@
                 timestamp: Date.now()
             };
             localStorage.setItem('chatSession', JSON.stringify(sessionData));
+            localStorage.setItem('chatCredentials', JSON.stringify({
+                username: currentUser.username,
+                password: loginPassword.value
+            }));
             showChatApp();
             loadUsers();
             startPolling();
+            startKeepAlive();
+            hideLoading();
         }
 
         function logout() {
@@ -1363,13 +1345,16 @@
             selectedUserObj = null;
             isAdmin = false;
             localStorage.removeItem('chatSession');
+            localStorage.removeItem('chatCredentials');
             stopPolling();
+            stopKeepAlive();
             showLoginPage();
         }
 
         function showLoginPage() {
             loginPage.style.display = 'flex';
             chatApp.classList.add('hidden');
+            hideLoading();
         }
 
         function showChatApp() {
@@ -1384,6 +1369,22 @@
                 myAvatar.classList.remove('admin-avatar');
                 myName.textContent = currentUser.displayName;
             }
+            hideLoading();
+        }
+
+        function showError(msg) {
+            loginError.textContent = msg;
+            loginError.classList.add('show');
+            loginSuccess.classList.remove('show');
+            hideLoading();
+            setTimeout(() => loginError.classList.remove('show'), 5000);
+        }
+
+        function showSuccess(msg) {
+            loginSuccess.textContent = msg;
+            loginSuccess.classList.add('show');
+            loginError.classList.remove('show');
+            setTimeout(() => loginSuccess.classList.remove('show'), 4000);
         }
 
         // ===== PASSWORD RESET (User Self) =====
@@ -1396,19 +1397,16 @@
                 showResetError('Please fill all fields');
                 return;
             }
-
             if (newPass.length < 4) {
                 showResetError('Password must be at least 4 characters');
                 return;
             }
-
             if (newPass !== confirmPass) {
                 showResetError('Passwords do not match');
                 return;
             }
-
             try {
-                const result = await apiCall('/api/auth/reset-password', {
+                await apiCall('/api/auth/reset-password', {
                     method: 'POST',
                     body: { username, newPassword: newPass }
                 });
@@ -1426,33 +1424,41 @@
             }
         }
 
+        function showResetError(msg) {
+            resetError.textContent = msg;
+            resetError.classList.add('show');
+            resetSuccess.classList.remove('show');
+            setTimeout(() => resetError.classList.remove('show'), 5000);
+        }
+        function showResetSuccess(msg) {
+            resetSuccess.textContent = msg;
+            resetSuccess.classList.add('show');
+            resetError.classList.remove('show');
+            setTimeout(() => resetSuccess.classList.remove('show'), 4000);
+        }
+
         // ===== ADMIN RESET PASSWORD =====
         async function adminResetPassword() {
             if (!selectedUserObj) {
                 showAdminResetError('No user selected');
                 return;
             }
-
             const newPass = adminNewPassword.value;
             const confirmPass = adminConfirmPassword.value;
-
             if (!newPass || !confirmPass) {
                 showAdminResetError('Please fill all fields');
                 return;
             }
-
             if (newPass.length < 4) {
                 showAdminResetError('Password must be at least 4 characters');
                 return;
             }
-
             if (newPass !== confirmPass) {
                 showAdminResetError('Passwords do not match');
                 return;
             }
-
             try {
-                const result = await apiCall('/api/admin/reset-password', {
+                await apiCall('/api/admin/reset-password', {
                     method: 'POST',
                     body: { 
                         userId: selectedUserObj.id,
@@ -1470,6 +1476,18 @@
             } catch (error) {
                 showAdminResetError(error.message || 'Failed to reset password');
             }
+        }
+        function showAdminResetError(msg) {
+            adminResetError.textContent = msg;
+            adminResetError.classList.add('show');
+            adminResetSuccess.classList.remove('show');
+            setTimeout(() => adminResetError.classList.remove('show'), 5000);
+        }
+        function showAdminResetSuccess(msg) {
+            adminResetSuccess.textContent = msg;
+            adminResetSuccess.classList.add('show');
+            adminResetError.classList.remove('show');
+            setTimeout(() => adminResetSuccess.classList.remove('show'), 4000);
         }
 
         // ===== USERS =====
@@ -1505,21 +1523,17 @@
                 usersList.innerHTML = `<div style="color:var(--text-secondary); text-align:center; padding:40px 20px; font-size:14px;">👤 No users found.</div>`;
                 return;
             }
-            
             let html = '';
             if (isAdmin) {
                 html += `<div class="admin-section-title">👑 Admin Panel - All Users (${users.length})</div>`;
             }
-            
             html += users.map(user => {
                 const isActive = activeUsersList && activeUsersList.includes(user.username);
                 const isUserAdmin = user.username === ADMIN_USERNAME;
                 if (!isAdmin && isUserAdmin) return '';
-                
                 const deleteBtn = (isAdmin && !isUserAdmin) 
                     ? `<button class="delete-user-btn" data-userid="${user.id}" title="Delete User">🗑️</button>` 
                     : '';
-                
                 return `
                     <div class="user-item" data-userid="${user.id}">
                         <div class="avatar ${isUserAdmin ? 'admin-user-avatar' : ''}" style="background: ${isUserAdmin ? '#8b5cf6' : '#' + Math.floor(Math.random()*16777215).toString(16).padStart(6, '0')};">${user.displayName.charAt(0).toUpperCase()}</div>
@@ -1535,7 +1549,6 @@
                     </div>
                 `;
             }).join('');
-            
             usersList.innerHTML = html;
 
             document.querySelectorAll('.user-item').forEach(el => {
@@ -1546,7 +1559,6 @@
                     if (user) selectUser(user);
                 });
             });
-
             document.querySelectorAll('.delete-user-btn').forEach(btn => {
                 btn.addEventListener('click', (e) => {
                     e.stopPropagation();
@@ -1562,13 +1574,11 @@
             selectedUserObj = user;
             chatHeader.style.display = 'flex';
             chatInputWrapper.classList.add('show');
-            
             const color = user.username === ADMIN_USERNAME ? '#8b5cf6' : `#${Math.floor(Math.random()*16777215).toString(16).padStart(6, '0')}`;
             chatAvatar.textContent = user.displayName.charAt(0).toUpperCase();
             chatAvatar.style.background = color;
             chatName.textContent = user.displayName + (user.username === ADMIN_USERNAME ? ' 👑' : '');
             chatStatus.textContent = 'Online';
-            
             if (isAdmin && user.username !== ADMIN_USERNAME) {
                 resetPwdBtn.style.display = 'block';
                 deleteUserBtn.style.display = 'inline-flex';
@@ -1576,11 +1586,9 @@
                 resetPwdBtn.style.display = 'none';
                 deleteUserBtn.style.display = 'none';
             }
-
             document.querySelectorAll('.user-item').forEach(el => {
                 el.classList.toggle('active', el.dataset.userid === user.id);
             });
-
             showChatOnMobile();
             loadMessages();
         }
@@ -1607,7 +1615,6 @@
                 let displayText = msg.ciphertext;
                 let isImage = false;
                 let senderName = '';
-                
                 if (isAdmin) {
                     const sender = allUsers.find(u => u.id === msg.senderId);
                     const receiver = allUsers.find(u => u.id === msg.receiverId);
@@ -1616,7 +1623,6 @@
                         senderName = `${sender.displayName} → ${receiver.displayName}`;
                     }
                 }
-                
                 try {
                     const decoded = atob(msg.ciphertext);
                     if (decoded.startsWith('data:image')) {
@@ -1629,14 +1635,11 @@
                         } catch(e) {}
                     }
                 } catch(e) {}
-                
                 let content = isImage 
                     ? `<img src="${displayText}" alt="Image" onclick="window.open('${displayText}','_blank')" />` 
                     : `<span class="msg-text">${displayText}</span>`;
-                
                 const senderHtml = isAdmin && senderName ? `<span class="sender-name">📨 ${senderName}</span>` : '';
                 const msgIdHtml = isAdmin ? `<span class="msg-id">🆔 ${msg.id.substring(0,12)}</span>` : '';
-                
                 return `
                     <div class="message ${isSent ? 'sent' : 'received'} ${isAdmin ? 'admin-message' : ''}">
                         ${senderHtml}
@@ -1653,13 +1656,11 @@
         async function sendMessage() {
             const text = messageInput.value.trim();
             let imageData = pendingImage;
-
             if (!text && !imageData) return;
             if (!selectedUserId) {
                 alert('Please select a user first');
                 return;
             }
-
             try {
                 let content = text || '📷 Image';
                 if (imageData) {
@@ -1670,7 +1671,6 @@
                 }
                 const ciphertext = btoa(content);
                 const iv = crypto.randomUUID();
-                
                 await apiCall('/api/messages', {
                     method: 'POST',
                     body: { receiverId: selectedUserId, ciphertext, iv }
@@ -1708,7 +1708,6 @@
                 e.target.value = '';
             }
         });
-
         cameraBtn.addEventListener('click', () => cameraInput.click());
         cameraInput.addEventListener('change', (e) => {
             if (e.target.files.length > 0) {
@@ -1716,7 +1715,6 @@
                 e.target.value = '';
             }
         });
-
         removeImageBtn.addEventListener('click', () => {
             pendingImage = null;
             imagePreview.classList.remove('show');
@@ -1744,14 +1742,11 @@
             const newPass = newPassword.value;
             const confirmPass = confirmPassword.value;
             const theme = themeSelect.value;
-
             applyTheme(theme);
-
             if (isAdmin) {
                 showSettingsError('⚠️ Admin cannot change password here');
                 return;
             }
-
             if (newPass || currentPass) {
                 if (!currentPass) {
                     showSettingsError('Please enter current password');
@@ -1765,7 +1760,6 @@
                     showSettingsError('New passwords do not match');
                     return;
                 }
-
                 try {
                     await apiCall('/api/auth/change-password', {
                         method: 'POST',
@@ -1785,8 +1779,12 @@
                     return;
                 }
             }
-
             settingsOverlay.classList.remove('show');
+        }
+        function showSettingsError(msg) {
+            settingsError.textContent = msg;
+            settingsError.style.display = 'block';
+            setTimeout(() => settingsError.style.display = 'none', 4000);
         }
 
         // ===== POLLING =====
@@ -1797,7 +1795,6 @@
                 loadUsers();
             }, 3000);
         }
-
         function stopPolling() {
             if (messageInterval) {
                 clearInterval(messageInterval);
@@ -1817,6 +1814,45 @@
             });
         });
 
+        // ===== MOBILE SIDEBAR =====
+        function toggleSidebar(show) {
+            if (!isMobile) return;
+            if (show === false) {
+                sidebar.classList.add('hidden-sidebar');
+            } else {
+                sidebar.classList.remove('hidden-sidebar');
+            }
+        }
+        function showChatOnMobile() {
+            if (isMobile) toggleSidebar(false);
+        }
+        function showSidebarOnMobile() {
+            if (isMobile) toggleSidebar(true);
+        }
+
+        backBtn.addEventListener('click', () => {
+            showSidebarOnMobile();
+            selectedUserId = null;
+            selectedUserObj = null;
+            chatHeader.style.display = 'none';
+            chatInputWrapper.classList.remove('show');
+            resetPwdBtn.style.display = 'none';
+            deleteUserBtn.style.display = 'none';
+            messagesBox.innerHTML = `<div class="empty-state"><div class="icon">💬</div><h3>Select a user to start chatting</h3><p>Choose a contact from the sidebar</p></div>`;
+        });
+
+        window.addEventListener('resize', () => {
+            isMobile = window.innerWidth <= 768;
+            if (!isMobile) sidebar.classList.remove('hidden-sidebar');
+        });
+
+        // ===== AUTO LOGOUT ON TAB CLOSE =====
+        window.addEventListener('beforeunload', function() {
+            if (currentToken) {
+                navigator.sendBeacon(`${API_BASE}/api/auth/logout`, JSON.stringify({ token: currentToken }));
+            }
+        });
+
         // ===== EVENT LISTENERS =====
         loginBtn.addEventListener('click', login);
         loginPassword.addEventListener('keypress', (e) => e.key === 'Enter' && login());
@@ -1824,8 +1860,7 @@
         sendBtn.addEventListener('click', sendMessage);
         messageInput.addEventListener('keypress', (e) => e.key === 'Enter' && sendMessage());
         clearChatBtn.addEventListener('click', clearChat);
-        
-        // Admin Reset Password Button
+
         resetPwdBtn.addEventListener('click', () => {
             if (selectedUserObj) {
                 adminResetUsername.textContent = selectedUserObj.username;
@@ -1838,13 +1873,12 @@
             }
         });
 
-        // Admin Delete User Button (in header)
         deleteUserBtn.addEventListener('click', function() {
             if (selectedUserObj) {
                 deleteUser(selectedUserObj.id);
             }
         });
-        
+
         settingsBtn.addEventListener('click', () => {
             settingsOverlay.classList.add('show');
         });
@@ -1859,7 +1893,6 @@
             }
         });
 
-        // User Self Password Reset
         forgotPasswordLink.addEventListener('click', () => {
             resetOverlay.classList.add('show');
             resetError.classList.remove('show');
@@ -1880,7 +1913,6 @@
             }
         });
 
-        // Admin Reset
         closeAdminResetBtn.addEventListener('click', () => {
             adminResetOverlay.classList.remove('show');
             adminResetError.classList.remove('show');
@@ -1895,6 +1927,7 @@
 
         // ===== INIT =====
         (async function init() {
+            showLoading();
             const savedTheme = localStorage.getItem('chatTheme') || 'dark';
             applyTheme(savedTheme);
 
@@ -1910,22 +1943,46 @@
                             showChatApp();
                             loadUsers();
                             startPolling();
+                            startKeepAlive();
+                            hideLoading();
                             return;
                         }
                         currentToken = session.token;
                         currentUser = session.user;
-                        const me = await apiCall('/api/auth/me');
-                        if (me.user) {
-                            showChatApp();
-                            loadUsers();
-                            startPolling();
-                            return;
+                        try {
+                            const me = await apiCall('/api/auth/me');
+                            if (me.user) {
+                                showChatApp();
+                                loadUsers();
+                                startPolling();
+                                startKeepAlive();
+                                hideLoading();
+                                return;
+                            }
+                        } catch (e) {
+                            const savedCreds = localStorage.getItem('chatCredentials');
+                            if (savedCreds) {
+                                try {
+                                    const creds = JSON.parse(savedCreds);
+                                    const result = await apiCall('/api/auth/login', {
+                                        method: 'POST',
+                                        body: { username: creds.username, password: creds.password }
+                                    });
+                                    handleAuthSuccess(result);
+                                    hideLoading();
+                                    return;
+                                } catch (loginError) {
+                                    localStorage.removeItem('chatSession');
+                                    localStorage.removeItem('chatCredentials');
+                                }
+                            }
                         }
                     }
                 } catch (e) {
                     localStorage.removeItem('chatSession');
                 }
             }
+            hideLoading();
             showLoginPage();
         })();
     </script>
