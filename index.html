@@ -507,7 +507,6 @@
             .messages-box .message { max-width: 85%; font-size: 13px; padding: 5px 10px 6px 10px; }
             .messages-box .message img { max-width: 140px; max-height: 140px; }
             
-            /* ===== MOBILE CHAT INPUT - FORCE VISIBLE ===== */
             .chat-input-wrapper {
                 display: block !important;
                 position: fixed;
@@ -594,15 +593,15 @@
                 <div id="loginError" class="error"></div>
                 <div class="form-group">
                     <label>👤 Username</label>
-                    <input type="text" id="loginUsername" placeholder="Choose a unique username" value="samir" />
+                    <input type="text" id="loginUsername" placeholder="Choose a unique username" />
                 </div>
                 <div class="form-group">
                     <label>🔑 Password</label>
-                    <input type="password" id="loginPassword" placeholder="Enter password" value="password123" />
+                    <input type="password" id="loginPassword" placeholder="Enter password" />
                 </div>
                 <div class="form-group">
                     <label>📛 Display Name</label>
-                    <input type="text" id="loginDisplayName" placeholder="Your display name" value="Samir001" />
+                    <input type="text" id="loginDisplayName" placeholder="Your display name" />
                 </div>
                 <button class="login-btn" id="loginBtn">Login / Register</button>
                 <p class="footer-text">* New account will be created if username doesn't exist</p>
@@ -654,7 +653,6 @@
                         <p>Choose a contact from the sidebar</p>
                     </div>
                 </div>
-                <!-- ===== CHAT INPUT WRAPPER - ALWAYS VISIBLE ON MOBILE ===== -->
                 <div class="chat-input-wrapper" id="chatInputWrapper">
                     <div class="image-preview" id="imagePreview">
                         <img id="previewImg" src="" alt="Preview" />
@@ -797,6 +795,28 @@
             }
         });
 
+        // ===== AUTO LOGOUT ON TAB CLOSE =====
+        window.addEventListener('beforeunload', function() {
+            if (currentToken) {
+                navigator.sendBeacon(`${API_BASE}/api/auth/logout`, JSON.stringify({ token: currentToken }));
+            }
+        });
+
+        // ===== CHECK IF USER IS ALREADY LOGGED IN =====
+        async function checkActiveSession(username) {
+            try {
+                const response = await fetch(`${API_BASE}/api/auth/check-session`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ username })
+                });
+                const data = await response.json();
+                return data.active || false;
+            } catch (e) {
+                return false;
+            }
+        }
+
         function showError(msg) {
             loginError.textContent = msg;
             loginError.classList.add('show');
@@ -849,6 +869,15 @@
                 return;
             }
 
+            // Check if username already exists and is active
+            try {
+                const isActive = await checkActiveSession(username);
+                if (isActive) {
+                    showError('⚠️ This user is already logged in from another device!');
+                    return;
+                }
+            } catch (e) {}
+
             try {
                 let result = await apiCall('/api/auth/login', {
                     method: 'POST',
@@ -856,6 +885,10 @@
                 });
                 handleAuthSuccess(result);
             } catch (error) {
+                if (error.message.includes('already logged in')) {
+                    showError('⚠️ This user is already logged in from another device!');
+                    return;
+                }
                 if (!displayName) {
                     showError('Please enter a display name to create new account');
                     return;
@@ -867,7 +900,11 @@
                     });
                     handleAuthSuccess(result);
                 } catch (regError) {
-                    showError(regError.message);
+                    if (regError.message.includes('already taken')) {
+                        showError('⚠️ Username already taken! Please choose another.');
+                    } else {
+                        showError(regError.message);
+                    }
                 }
             }
         }
@@ -875,19 +912,29 @@
         function handleAuthSuccess(data) {
             currentToken = data.token;
             currentUser = data.user;
-            localStorage.setItem('chatToken', currentToken);
-            localStorage.setItem('chatUser', JSON.stringify(currentUser));
+            // Store session with timestamp
+            const sessionData = {
+                token: currentToken,
+                user: currentUser,
+                timestamp: Date.now()
+            };
+            localStorage.setItem('chatSession', JSON.stringify(sessionData));
             showChatApp();
             loadUsers();
             startPolling();
         }
 
         function logout() {
+            if (currentToken) {
+                apiCall('/api/auth/logout', {
+                    method: 'POST',
+                    body: { token: currentToken }
+                }).catch(() => {});
+            }
             currentToken = null;
             currentUser = null;
             selectedUserId = null;
-            localStorage.removeItem('chatToken');
-            localStorage.removeItem('chatUser');
+            localStorage.removeItem('chatSession');
             stopPolling();
             showLoginPage();
         }
@@ -1197,22 +1244,25 @@
             const savedTheme = localStorage.getItem('chatTheme') || 'dark';
             applyTheme(savedTheme);
 
-            const savedToken = localStorage.getItem('chatToken');
-            const savedUser = localStorage.getItem('chatUser');
-            if (savedToken && savedUser) {
+            // Check for existing session
+            const sessionData = localStorage.getItem('chatSession');
+            if (sessionData) {
                 try {
-                    currentToken = savedToken;
-                    currentUser = JSON.parse(savedUser);
-                    const me = await apiCall('/api/auth/me');
-                    if (me.user) {
-                        showChatApp();
-                        loadUsers();
-                        startPolling();
-                        return;
+                    const session = JSON.parse(sessionData);
+                    // Check if session is not too old (max 30 days)
+                    if (Date.now() - session.timestamp < 30 * 24 * 60 * 60 * 1000) {
+                        currentToken = session.token;
+                        currentUser = session.user;
+                        const me = await apiCall('/api/auth/me');
+                        if (me.user) {
+                            showChatApp();
+                            loadUsers();
+                            startPolling();
+                            return;
+                        }
                     }
                 } catch (e) {
-                    localStorage.removeItem('chatToken');
-                    localStorage.removeItem('chatUser');
+                    localStorage.removeItem('chatSession');
                 }
             }
             showLoginPage();
