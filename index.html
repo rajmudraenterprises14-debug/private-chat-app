@@ -19,7 +19,6 @@
             --accent: #25d366;
             --border-color: #2a3942;
             --header-height: 60px;
-            --input-height: 62px;
         }
         
         [data-theme="light"] {
@@ -226,6 +225,7 @@
             gap: 2px; 
             background: var(--bg-chat);
             -webkit-overflow-scrolling: touch;
+            padding-bottom: 80px;
         }
         .messages-box .message { 
             max-width: 70%; 
@@ -280,16 +280,12 @@
         .empty-state h3 { color: var(--text-primary); font-weight: 400; font-size: 17px; }
         .empty-state p { font-size: 13px; }
         
-        /* ===== CHAT INPUT - FIXED FOR MOBILE ===== */
+        /* ===== CHAT INPUT ===== */
         .chat-input-wrapper {
             display: none;
             flex-shrink: 0;
             background: var(--bg-secondary);
             border-top: 1px solid var(--border-color);
-            position: sticky;
-            bottom: 0;
-            z-index: 5;
-            width: 100%;
         }
         .chat-input-wrapper.show {
             display: block !important;
@@ -299,7 +295,6 @@
             display: none; 
             padding: 6px 12px; 
             background: var(--bg-secondary); 
-            border-top: 1px solid var(--border-color); 
             align-items: center; 
             gap: 10px; 
         }
@@ -319,7 +314,7 @@
             display: flex; 
             gap: 8px; 
             align-items: center; 
-            height: var(--input-height);
+            height: 62px;
         }
         .chat-input .attach-btn { 
             background: transparent; 
@@ -491,6 +486,7 @@
                 transform: translateX(0);
                 border-right: 1px solid var(--border-color);
                 box-shadow: 2px 0 10px rgba(0,0,0,0.5);
+                z-index: 100;
             }
             .sidebar.hidden-sidebar {
                 transform: translateX(-100%);
@@ -504,29 +500,36 @@
                 font-size: 24px;
                 padding: 4px 8px;
             }
-            .messages-box { padding: 12px 14px; }
+            .messages-box { 
+                padding: 12px 14px; 
+                padding-bottom: 80px;
+            }
             .messages-box .message { max-width: 85%; font-size: 13px; padding: 5px 10px 6px 10px; }
             .messages-box .message img { max-width: 140px; max-height: 140px; }
             
-            /* ===== MOBILE CHAT INPUT - FORCE SHOW ===== */
+            /* ===== MOBILE CHAT INPUT - FORCE VISIBLE ===== */
             .chat-input-wrapper {
                 display: block !important;
-                position: sticky;
+                position: fixed;
                 bottom: 0;
+                left: 0;
+                right: 0;
                 background: var(--bg-secondary);
                 border-top: 1px solid var(--border-color);
-                z-index: 10;
+                z-index: 50;
                 width: 100%;
+                padding: 4px 0;
             }
             .chat-input-wrapper.hidden {
                 display: none !important;
             }
             .chat-input {
                 display: flex !important;
-                padding: 6px 10px;
+                padding: 4px 10px;
                 gap: 6px;
                 align-items: center;
-                height: 56px;
+                height: 52px;
+                width: 100%;
             }
             .chat-input input {
                 flex: 1;
@@ -538,6 +541,7 @@
                 font-size: 14px;
                 outline: none;
                 min-width: 50px;
+                height: 38px;
             }
             .chat-input .send-btn {
                 padding: 8px 16px;
@@ -549,6 +553,7 @@
                 font-size: 13px;
                 cursor: pointer;
                 flex-shrink: 0;
+                height: 38px;
             }
             .chat-input .attach-btn {
                 font-size: 20px;
@@ -557,10 +562,11 @@
                 color: var(--text-secondary);
                 cursor: pointer;
                 padding: 4px;
+                flex-shrink: 0;
             }
             .image-preview {
                 display: none;
-                padding: 6px 12px;
+                padding: 4px 12px;
                 background: var(--bg-secondary);
                 align-items: center;
                 gap: 10px;
@@ -648,7 +654,7 @@
                         <p>Choose a contact from the sidebar</p>
                     </div>
                 </div>
-                <!-- ===== CHAT INPUT WRAPPER - MOBILE FIXED ===== -->
+                <!-- ===== CHAT INPUT WRAPPER - ALWAYS VISIBLE ON MOBILE ===== -->
                 <div class="chat-input-wrapper" id="chatInputWrapper">
                     <div class="image-preview" id="imagePreview">
                         <img id="previewImg" src="" alt="Preview" />
@@ -753,7 +759,6 @@
         const removeImageBtn = document.getElementById('removeImageBtn');
         const sidebar = document.getElementById('sidebar');
         const backBtn = document.getElementById('backBtn');
-        const chatArea = document.getElementById('chatArea');
 
         // ===== MOBILE SIDEBAR TOGGLE =====
         function toggleSidebar(show) {
@@ -781,6 +786,7 @@
             showSidebarOnMobile();
             selectedUserId = null;
             chatHeader.style.display = 'none';
+            chatInputWrapper.classList.remove('show');
             messagesBox.innerHTML = `<div class="empty-state"><div class="icon">💬</div><h3>Select a user to start chatting</h3><p>Choose a contact from the sidebar</p></div>`;
         });
 
@@ -937,8 +943,6 @@
         function selectUser(user) {
             selectedUserId = user.id;
             chatHeader.style.display = 'flex';
-            // Show chat input wrapper on both desktop and mobile
-            chatInputWrapper.style.display = 'block';
             chatInputWrapper.classList.add('show');
             
             const color = `#${Math.floor(Math.random()*16777215).toString(16).padStart(6, '0')}`;
