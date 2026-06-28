@@ -47,6 +47,10 @@
             height: 100vh;
             transition: transform 0.3s ease;
             flex-shrink: 0;
+            z-index: 10;
+        }
+        .sidebar.hidden-sidebar {
+            transform: translateX(-100%);
         }
         
         .sidebar-header { 
@@ -157,6 +161,7 @@
             background: var(--bg-chat); 
             min-width: 0;
             height: 100vh;
+            position: relative;
         }
         
         .chat-header { 
@@ -260,7 +265,6 @@
             margin: 3px 0; 
             cursor: pointer;
         }
-        .messages-box .message img:active { transform: scale(0.95); }
         
         .empty-state { 
             display: flex; 
@@ -276,15 +280,37 @@
         .empty-state h3 { color: var(--text-primary); font-weight: 400; font-size: 17px; }
         .empty-state p { font-size: 13px; }
         
+        /* ===== CHAT INPUT - FIXED VISIBILITY ===== */
+        .chat-input-wrapper {
+            flex-shrink: 0;
+            background: var(--bg-secondary);
+            border-top: 1px solid var(--border-color);
+        }
+        .image-preview { 
+            display: none; 
+            padding: 6px 12px; 
+            background: var(--bg-secondary); 
+            border-top: 1px solid var(--border-color); 
+            align-items: center; 
+            gap: 10px; 
+        }
+        .image-preview.show { display: flex; }
+        .image-preview img { max-height: 60px; border-radius: 6px; }
+        .image-preview .remove-btn { 
+            background: #ef4444; 
+            color: white; 
+            border: none; 
+            padding: 3px 10px; 
+            border-radius: 4px; 
+            cursor: pointer; 
+            font-size: 11px; 
+        }
         .chat-input { 
             padding: 5px 12px; 
-            background: var(--bg-secondary); 
             display: flex; 
             gap: 8px; 
             align-items: center; 
-            border-top: 1px solid var(--border-color); 
             height: var(--input-height);
-            flex-shrink: 0;
         }
         .chat-input .attach-btn { 
             background: transparent; 
@@ -323,27 +349,6 @@
         }
         .chat-input .send-btn:hover { background: #1da85a; }
         .chat-input .send-btn:active { transform: scale(0.95); }
-        
-        .image-preview { 
-            display: none; 
-            padding: 6px 12px; 
-            background: var(--bg-secondary); 
-            border-top: 1px solid var(--border-color); 
-            align-items: center; 
-            gap: 10px; 
-            flex-shrink: 0;
-        }
-        .image-preview.show { display: flex; }
-        .image-preview img { max-height: 60px; border-radius: 6px; }
-        .image-preview .remove-btn { 
-            background: #ef4444; 
-            color: white; 
-            border: none; 
-            padding: 3px 10px; 
-            border-radius: 4px; 
-            cursor: pointer; 
-            font-size: 11px; 
-        }
         
         /* ===== LOGIN ===== */
         .login-container { 
@@ -464,25 +469,32 @@
         ::-webkit-scrollbar-thumb { background: var(--border-color); border-radius: 8px; }
         ::-webkit-scrollbar-thumb:hover { background: #3a4a52; }
         
-        /* ===== RESPONSIVE ===== */
+        /* ===== RESPONSIVE - MOBILE ===== */
         @media (max-width: 768px) {
             .sidebar { 
                 max-width: 100%;
                 min-width: 0;
-                width: 100%;
-                position: absolute;
+                width: 85%;
+                position: fixed;
                 top: 0;
                 left: 0;
-                z-index: 10;
                 height: 100vh;
                 transform: translateX(0);
-                border-right: none;
+                border-right: 1px solid var(--border-color);
+                box-shadow: 2px 0 10px rgba(0,0,0,0.5);
             }
             .sidebar.hidden-sidebar {
                 transform: translateX(-100%);
             }
-            .chat-area { width: 100%; height: 100vh; }
-            .chat-header .back-btn { display: block; }
+            .chat-area { 
+                width: 100%; 
+                height: 100vh;
+            }
+            .chat-header .back-btn { 
+                display: block;
+                font-size: 24px;
+                padding: 4px 8px;
+            }
             .messages-box { padding: 12px 14px; }
             .messages-box .message { max-width: 85%; font-size: 13px; padding: 5px 10px 6px 10px; }
             .messages-box .message img { max-width: 140px; max-height: 140px; }
@@ -497,6 +509,17 @@
             .users-list .user-item .avatar { width: 40px; height: 40px; font-size: 16px; }
             .login-box { padding: 24px 20px; }
             .login-box h1 { font-size: 20px; }
+            .chat-input-wrapper {
+                position: sticky;
+                bottom: 0;
+                z-index: 5;
+            }
+        }
+        
+        @media (max-width: 400px) {
+            .messages-box .message { max-width: 92%; }
+            .chat-input input { font-size: 12px; padding: 5px 10px; }
+            .chat-input .send-btn { padding: 5px 12px; font-size: 11px; }
         }
     </style>
 </head>
@@ -571,17 +594,19 @@
                         <p>Choose a contact from the sidebar</p>
                     </div>
                 </div>
-                <div class="image-preview" id="imagePreview">
-                    <img id="previewImg" src="" alt="Preview" />
-                    <button class="remove-btn" id="removeImageBtn">✕ Remove</button>
-                </div>
-                <div class="chat-input" id="chatInput" style="display:none;">
-                    <button class="attach-btn" id="attachBtn" title="Attach Image">📎</button>
-                    <input type="file" id="fileInput" accept="image/*" style="display:none;" />
-                    <button class="attach-btn" id="cameraBtn" title="Take Photo">📷</button>
-                    <input type="file" id="cameraInput" accept="image/*" capture="environment" style="display:none;" />
-                    <input type="text" id="messageInput" placeholder="Type a message..." />
-                    <button class="send-btn" id="sendBtn">Send</button>
+                <div class="chat-input-wrapper" id="chatInputWrapper" style="display:none;">
+                    <div class="image-preview" id="imagePreview">
+                        <img id="previewImg" src="" alt="Preview" />
+                        <button class="remove-btn" id="removeImageBtn">✕ Remove</button>
+                    </div>
+                    <div class="chat-input" id="chatInput">
+                        <button class="attach-btn" id="attachBtn" title="Attach Image">📎</button>
+                        <input type="file" id="fileInput" accept="image/*" style="display:none;" />
+                        <button class="attach-btn" id="cameraBtn" title="Take Photo">📷</button>
+                        <input type="file" id="cameraInput" accept="image/*" capture="environment" style="display:none;" />
+                        <input type="text" id="messageInput" placeholder="Type a message..." />
+                        <button class="send-btn" id="sendBtn">Send</button>
+                    </div>
                 </div>
             </div>
         </div>
@@ -659,7 +684,7 @@
         const myAvatar = document.getElementById('myAvatar');
         const myName = document.getElementById('myName');
         const chatHeader = document.getElementById('chatHeader');
-        const chatInput = document.getElementById('chatInput');
+        const chatInputWrapper = document.getElementById('chatInputWrapper');
         const chatAvatar = document.getElementById('chatAvatar');
         const chatName = document.getElementById('chatName');
         const chatStatus = document.getElementById('chatStatus');
@@ -701,7 +726,7 @@
             showSidebarOnMobile();
             selectedUserId = null;
             chatHeader.style.display = 'none';
-            chatInput.style.display = 'none';
+            chatInputWrapper.style.display = 'none';
             messagesBox.innerHTML = `<div class="empty-state"><div class="icon">💬</div><h3>Select a user to start chatting</h3><p>Choose a contact from the sidebar</p></div>`;
         });
 
@@ -858,7 +883,7 @@
         function selectUser(user) {
             selectedUserId = user.id;
             chatHeader.style.display = 'flex';
-            chatInput.style.display = 'flex';
+            chatInputWrapper.style.display = 'block';
             const color = `#${Math.floor(Math.random()*16777215).toString(16).padStart(6, '0')}`;
             chatAvatar.textContent = user.displayName.charAt(0).toUpperCase();
             chatAvatar.style.background = color;
@@ -927,7 +952,6 @@
             let imageData = pendingImage;
 
             if (!text && !imageData) {
-                alert('Please enter a message or select an image');
                 return;
             }
             if (!selectedUserId) {
