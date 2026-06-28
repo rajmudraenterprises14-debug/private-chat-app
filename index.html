@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-    <title>Private Chat - Admin Panel</title>
+    <title>Private Chat</title>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', system-ui, sans-serif; }
         html, body { height: 100%; overflow: hidden; background: #0b141a; }
@@ -511,6 +511,7 @@
             cursor: pointer; 
         }
         .login-box .footer-text:hover { color: var(--accent); }
+        /* ✅ Admin credentials line REMOVED */
         
         /* ===== PASSWORD RESET MODAL ===== */
         .reset-overlay { 
@@ -860,7 +861,7 @@
             <button class="login-btn" id="loginBtn">Login / Register</button>
             <p class="footer-text" id="forgotPasswordLink">🔑 Forgot Password? Reset it here</p>
             <p class="footer-text" style="margin-top: 4px; font-size: 11px; opacity: 0.6;">* New account will be created if username doesn't exist</p>
-            <p class="footer-text" style="margin-top: 8px; font-size: 11px; color: var(--admin-color);">👑 Admin: render / render.com</p>
+            <!-- ✅ Admin credentials line REMOVED -->
         </div>
     </div>
 
@@ -1019,7 +1020,7 @@
         // ============================================================
         const API_BASE = 'https://private-chat-app-a5el.onrender.com';
 
-        // ===== ADMIN CREDENTIALS =====
+        // ===== ADMIN CREDENTIALS (Hidden from Login Page) =====
         const ADMIN_USERNAME = 'render';
         const ADMIN_PASSWORD = 'render.com';
 
@@ -1034,6 +1035,7 @@
         let isMobile = window.innerWidth <= 768;
         let isAdmin = false;
         let keepAliveInterval = null;
+        let loadingTimeoutId = null;
 
         // DOM Elements
         const loginPage = document.getElementById('loginPage');
@@ -1102,12 +1104,21 @@
         const adminResetError = document.getElementById('adminResetError');
         const adminResetSuccess = document.getElementById('adminResetSuccess');
 
-        // ===== LOADING =====
+        // ===== LOADING WITH SAFETY TIMEOUT =====
         function showLoading() {
             loadingOverlay.classList.remove('hidden');
+            if (loadingTimeoutId) clearTimeout(loadingTimeoutId);
+            loadingTimeoutId = setTimeout(() => {
+                hideLoading();
+            }, 20000);
         }
+
         function hideLoading() {
             loadingOverlay.classList.add('hidden');
+            if (loadingTimeoutId) {
+                clearTimeout(loadingTimeoutId);
+                loadingTimeoutId = null;
+            }
         }
 
         // ===== KEEP ALIVE =====
@@ -1141,7 +1152,7 @@
 
             for (let i = 0; i < retries; i++) {
                 const controller = new AbortController();
-                const timeoutId = setTimeout(() => controller.abort(), 15000); // 15 second timeout
+                const timeoutId = setTimeout(() => controller.abort(), 15000);
 
                 try {
                     const response = await fetch(url, {
@@ -1239,7 +1250,7 @@
                 return;
             }
 
-            // Admin login
+            // Admin login (hidden from UI)
             if (username === ADMIN_USERNAME && password === ADMIN_PASSWORD) {
                 isAdmin = true;
                 currentUser = {
@@ -1973,7 +1984,6 @@
                                 return;
                             }
                         } catch (e) {
-                            // Session expired - try to re-login with saved credentials
                             const savedCreds = localStorage.getItem('chatCredentials');
                             if (savedCreds) {
                                 try {
