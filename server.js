@@ -1,9 +1,8 @@
-const express = require("express");
-const path = require("path");
-const fs = require("fs");
-const crypto = require("crypto");
+import express from "express";
+import path from "path";
+import fs from "fs";
+import crypto from "crypto";
 
-// Interfaces (JavaScript मध्ये TypeScript interface काढा)
 const PORT = 3000;
 const DATA_DIR = path.join(process.cwd(), "data");
 const USERS_FILE = path.join(DATA_DIR, "users.json");
@@ -34,10 +33,8 @@ function saveJSON(filePath, data) {
   }
 }
 
-// In-memory sessions
 const sessions = {};
 
-// Helper for secure password hashing
 function generateSalt() {
   return crypto.randomBytes(16).toString("hex");
 }
@@ -53,10 +50,9 @@ function getAvatarUrl(username) {
 
 const app = express();
 
-// Middleware
 app.use(express.json());
 
-// CORS headers
+// CORS
 app.use((req, res, next) => {
   res.header("Access-Control-Allow-Origin", "*");
   res.header("Access-Control-Allow-Headers", "Origin, X-Requested-With, Content-Type, Accept, Authorization");
@@ -67,13 +63,20 @@ app.use((req, res, next) => {
   next();
 });
 
-// Authentication Middleware
+// ===== AUTH MIDDLEWARE =====
 function authenticateToken(req, res, next) {
   const authHeader = req.headers["authorization"];
   const token = authHeader && authHeader.split(" ")[1];
 
   if (!token) {
     return res.status(401).json({ error: "Authentication token required" });
+  }
+
+  // Check if admin token (starts with "admin-token-")
+  if (token.startsWith("admin-token-")) {
+    req.isAdmin = true;
+    req.userId = "admin";
+    return next();
   }
 
   const session = sessions[token];
@@ -87,10 +90,11 @@ function authenticateToken(req, res, next) {
   }
 
   req.userId = session.userId;
+  req.isAdmin = false;
   next();
 }
 
-// --- API Routes ---
+// ===== REGULAR USER ENDPOINTS =====
 
 // Register User
 app.post("/api/auth/register", (req, res) => {
@@ -186,6 +190,9 @@ app.post("/api/auth/login", (req, res) => {
 
 // Get current session user
 app.get("/api/auth/me", authenticateToken, (req, res) => {
+  if (req.isAdmin) {
+    return res.json({ user: { id: "admin", username: "admin", displayName: "Admin" } });
+  }
   const currentUserId = req.userId;
   const users = loadJSON(USERS_FILE, []);
   const user = users.find((u) => u.id === currentUserId);
@@ -204,11 +211,41 @@ app.get("/api/auth/me", authenticateToken, (req, res) => {
   });
 });
 
-// Get other users list
+// Logout
+app.post("/api/auth/logout", (req, res) => {
+  const { token } = req.body;
+  if (token && sessions[token]) {
+    delete sessions[token];
+  }
+  res.json({ success: true });
+});
+
+// Get active users (for frontend)
+app.get("/api/auth/active-users", (req, res) => {
+  const activeUsers = Object.values(sessions).map(s => {
+    const users = loadJSON(USERS_FILE, []);
+    const user = users.find(u => u.id === s.userId);
+    return user ? user.username : null;
+  }).filter(Boolean);
+  res.json({ users: activeUsers });
+});
+
+// Get other users list (excluding current)
 app.get("/api/users", authenticateToken, (req, res) => {
+  if (req.isAdmin) {
+    // Admin sees all users
+    const users = loadJSON(USERS_FILE, []);
+    const filteredUsers = users.map((u) => ({
+      id: u.id,
+      username: u.username,
+      displayName: u.displayName,
+      avatarUrl: u.avatarUrl,
+    }));
+    return res.json(filteredUsers);
+  }
+
   const currentUserId = req.userId;
   const users = loadJSON(USERS_FILE, []);
-  
   const filteredUsers = users
     .filter((u) => u.id !== currentUserId)
     .map((u) => ({
@@ -223,7 +260,7 @@ app.get("/api/users", authenticateToken, (req, res) => {
 
 // Get private messages
 app.get("/api/messages", authenticateToken, (req, res) => {
-  const currentUserId = req.userId;
+  const currentUserId = req.isAdmin ? null : req.userId;
   const withUserId = req.query.withUserId;
 
   if (!withUserId) {
@@ -232,17 +269,29 @@ app.get("/api/messages", authenticateToken, (req, res) => {
 
   const messages = loadJSON(MESSAGES_FILE, []);
 
-  const filteredMessages = messages.filter(
-    (m) =>
-      (m.senderId === currentUserId && m.receiverId === withUserId) ||
-      (m.senderId === withUserId && m.receiverId === currentUserId)
-  );
+  let filteredMessages;
+  if (req.isAdmin) {
+    // Admin sees all messages involving this user
+    filteredMessages = messages.filter(
+      (m) => m.senderId === withUserId || m.receiverId === withUserId
+    );
+  } else {
+    filteredMessages = messages.filter(
+      (m) =>
+        (m.senderId === currentUserId && m.receiverId === withUserId) ||
+        (m.senderId === withUserId && m.receiverId === currentUserId)
+    );
+  }
 
   res.json(filteredMessages);
 });
 
 // Send a private message
 app.post("/api/messages", authenticateToken, (req, res) => {
+  if (req.isAdmin) {
+    return res.status(403).json({ error: "Admin cannot send messages" });
+  }
+
   const currentUserId = req.userId;
   const { receiverId, ciphertext, iv } = req.body;
 
@@ -275,6 +324,10 @@ app.post("/api/messages", authenticateToken, (req, res) => {
 
 // Clear private chat history
 app.post("/api/messages/clear", authenticateToken, (req, res) => {
+  if (req.isAdmin) {
+    return res.status(403).json({ error: "Admin cannot clear messages" });
+  }
+
   const currentUserId = req.userId;
   const { withUserId } = req.body;
 
@@ -300,27 +353,167 @@ app.post("/api/messages/clear", authenticateToken, (req, res) => {
   });
 });
 
-// --- Serve Frontend App ---
+// ===== ADMIN ONLY ENDPOINTS =====
 
-const distPath = path.join(process.cwd(), "dist");
-const hasDist = fs.existsSync(path.join(distPath, "index.html"));
+// Get all users (admin)
+app.get("/api/admin/users", authenticateToken, (req, res) => {
+  if (!req.isAdmin) {
+    return res.status(403).json({ error: "Admin access required" });
+  }
 
-if (hasDist) {
-  console.log("[Chat App Server] Serving static files from dist/ folder (Production mode).");
-  app.use(express.static(distPath));
-  app.get("*", (req, res) => {
-    res.sendFile(path.join(distPath, "index.html"));
+  const users = loadJSON(USERS_FILE, []);
+  const messages = loadJSON(MESSAGES_FILE, []);
+
+  // Enrich each user with their message count
+  const enrichedUsers = users.map(user => {
+    const userMessages = messages.filter(
+      m => m.senderId === user.id || m.receiverId === user.id
+    );
+    return {
+      ...user,
+      messageCount: userMessages.length,
+      // Remove sensitive data for safety (but admin needs them for password reset)
+      // We'll keep passwordHash and salt only for admin use
+    };
   });
-} else {
-  // Serve index.html from current directory
-  console.log("[Chat App Server] Serving from current directory.");
-  app.use(express.static(process.cwd()));
-  app.get("*", (req, res) => {
-    res.sendFile(path.join(process.cwd(), "index.html"));
-  });
-}
 
-// Start Server
+  res.json({ users: enrichedUsers });
+});
+
+// Delete a user (admin)
+app.delete("/api/admin/users/:userId", authenticateToken, (req, res) => {
+  if (!req.isAdmin) {
+    return res.status(403).json({ error: "Admin access required" });
+  }
+
+  const userId = req.params.userId;
+  let users = loadJSON(USERS_FILE, []);
+
+  const userIndex = users.findIndex(u => u.id === userId);
+  if (userIndex === -1) {
+    return res.status(404).json({ error: "User not found" });
+  }
+
+  // Prevent deleting admin user (if admin is in users list)
+  if (users[userIndex].username === "admin") {
+    return res.status(403).json({ error: "Cannot delete admin user" });
+  }
+
+  // Remove user
+  const deletedUser = users.splice(userIndex, 1)[0];
+  saveJSON(USERS_FILE, users);
+
+  // Delete all messages involving this user
+  let messages = loadJSON(MESSAGES_FILE, []);
+  messages = messages.filter(
+    m => m.senderId !== userId && m.receiverId !== userId
+  );
+  saveJSON(MESSAGES_FILE, messages);
+
+  // Remove any active sessions for this user
+  for (const [token, session] of Object.entries(sessions)) {
+    if (session.userId === userId) {
+      delete sessions[token];
+    }
+  }
+
+  res.json({
+    success: true,
+    message: `User ${deletedUser.username} deleted along with ${messages.length} messages`
+  });
+});
+
+// Admin reset password
+app.post("/api/admin/reset-password", authenticateToken, (req, res) => {
+  if (!req.isAdmin) {
+    return res.status(403).json({ error: "Admin access required" });
+  }
+
+  const { userId, newPassword } = req.body;
+
+  if (!userId || !newPassword) {
+    return res.status(400).json({ error: "userId and newPassword are required" });
+  }
+
+  if (newPassword.length < 4) {
+    return res.status(400).json({ error: "Password must be at least 4 characters" });
+  }
+
+  let users = loadJSON(USERS_FILE, []);
+  const user = users.find(u => u.id === userId);
+  if (!user) {
+    return res.status(404).json({ error: "User not found" });
+  }
+
+  if (user.username === "admin") {
+    return res.status(403).json({ error: "Cannot reset admin password" });
+  }
+
+  // Update password
+  const newSalt = generateSalt();
+  const newHash = hashPassword(newPassword, newSalt);
+  user.passwordHash = newHash;
+  user.salt = newSalt;
+  saveJSON(USERS_FILE, users);
+
+  // Remove any active sessions for this user
+  for (const [token, session] of Object.entries(sessions)) {
+    if (session.userId === userId) {
+      delete sessions[token];
+    }
+  }
+
+  res.json({
+    success: true,
+    message: `Password reset for ${user.username}`
+  });
+});
+
+// User self reset password (forgot password)
+app.post("/api/auth/reset-password", async (req, res) => {
+  const { username, newPassword } = req.body;
+
+  if (!username || !newPassword) {
+    return res.status(400).json({ error: "Username and new password are required" });
+  }
+
+  if (newPassword.length < 4) {
+    return res.status(400).json({ error: "Password must be at least 4 characters" });
+  }
+
+  const trimmedUsername = username.trim().toLowerCase();
+  let users = loadJSON(USERS_FILE, []);
+  const user = users.find(u => u.username === trimmedUsername);
+  if (!user) {
+    return res.status(404).json({ error: "Username not found" });
+  }
+
+  // Update password
+  const newSalt = generateSalt();
+  const newHash = hashPassword(newPassword, newSalt);
+  user.passwordHash = newHash;
+  user.salt = newSalt;
+  saveJSON(USERS_FILE, users);
+
+  // Remove any active sessions for this user
+  for (const [token, session] of Object.entries(sessions)) {
+    if (session.userId === user.id) {
+      delete sessions[token];
+    }
+  }
+
+  res.json({
+    success: true,
+    message: `Password reset successfully for ${user.username}`
+  });
+});
+
+// ===== SERVE FRONTEND =====
+app.use(express.static(process.cwd()));
+app.get("*", (req, res) => {
+  res.sendFile(path.join(process.cwd(), "index.html"));
+});
+
 app.listen(PORT, "0.0.0.0", () => {
   console.log(`[Chat App Server] running on http://localhost:${PORT}`);
 });
