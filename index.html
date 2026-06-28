@@ -280,12 +280,21 @@
         .empty-state h3 { color: var(--text-primary); font-weight: 400; font-size: 17px; }
         .empty-state p { font-size: 13px; }
         
-        /* ===== CHAT INPUT - FIXED VISIBILITY ===== */
+        /* ===== CHAT INPUT - FIXED FOR MOBILE ===== */
         .chat-input-wrapper {
+            display: none;
             flex-shrink: 0;
             background: var(--bg-secondary);
             border-top: 1px solid var(--border-color);
+            position: sticky;
+            bottom: 0;
+            z-index: 5;
+            width: 100%;
         }
+        .chat-input-wrapper.show {
+            display: block !important;
+        }
+        
         .image-preview { 
             display: none; 
             padding: 6px 12px; 
@@ -472,7 +481,7 @@
         /* ===== RESPONSIVE - MOBILE ===== */
         @media (max-width: 768px) {
             .sidebar { 
-                max-width: 100%;
+                max-width: 85%;
                 min-width: 0;
                 width: 85%;
                 position: fixed;
@@ -498,21 +507,66 @@
             .messages-box { padding: 12px 14px; }
             .messages-box .message { max-width: 85%; font-size: 13px; padding: 5px 10px 6px 10px; }
             .messages-box .message img { max-width: 140px; max-height: 140px; }
-            .chat-input { padding: 4px 10px; gap: 6px; height: 56px; }
-            .chat-input input { padding: 6px 12px; font-size: 13px; }
-            .chat-input .send-btn { padding: 6px 14px; font-size: 12px; }
-            .chat-input .attach-btn { font-size: 18px; }
-            .sidebar-header { padding: 10px 14px; height: 56px; }
-            .sidebar-header .avatar { width: 36px; height: 36px; font-size: 16px; }
-            .sidebar-header .name { font-size: 15px; }
-            .users-list .user-item { padding: 8px 14px; gap: 12px; }
-            .users-list .user-item .avatar { width: 40px; height: 40px; font-size: 16px; }
-            .login-box { padding: 24px 20px; }
-            .login-box h1 { font-size: 20px; }
+            
+            /* ===== MOBILE CHAT INPUT - FORCE SHOW ===== */
             .chat-input-wrapper {
+                display: block !important;
                 position: sticky;
                 bottom: 0;
-                z-index: 5;
+                background: var(--bg-secondary);
+                border-top: 1px solid var(--border-color);
+                z-index: 10;
+                width: 100%;
+            }
+            .chat-input-wrapper.hidden {
+                display: none !important;
+            }
+            .chat-input {
+                display: flex !important;
+                padding: 6px 10px;
+                gap: 6px;
+                align-items: center;
+                height: 56px;
+            }
+            .chat-input input {
+                flex: 1;
+                padding: 8px 14px;
+                border-radius: 20px;
+                border: none;
+                background: var(--bg-message-received);
+                color: var(--text-primary);
+                font-size: 14px;
+                outline: none;
+                min-width: 50px;
+            }
+            .chat-input .send-btn {
+                padding: 8px 16px;
+                border-radius: 20px;
+                background: var(--accent);
+                color: white;
+                border: none;
+                font-weight: 600;
+                font-size: 13px;
+                cursor: pointer;
+                flex-shrink: 0;
+            }
+            .chat-input .attach-btn {
+                font-size: 20px;
+                background: transparent;
+                border: none;
+                color: var(--text-secondary);
+                cursor: pointer;
+                padding: 4px;
+            }
+            .image-preview {
+                display: none;
+                padding: 6px 12px;
+                background: var(--bg-secondary);
+                align-items: center;
+                gap: 10px;
+            }
+            .image-preview.show {
+                display: flex !important;
             }
         }
         
@@ -594,7 +648,8 @@
                         <p>Choose a contact from the sidebar</p>
                     </div>
                 </div>
-                <div class="chat-input-wrapper" id="chatInputWrapper" style="display:none;">
+                <!-- ===== CHAT INPUT WRAPPER - MOBILE FIXED ===== -->
+                <div class="chat-input-wrapper" id="chatInputWrapper">
                     <div class="image-preview" id="imagePreview">
                         <img id="previewImg" src="" alt="Preview" />
                         <button class="remove-btn" id="removeImageBtn">✕ Remove</button>
@@ -645,7 +700,7 @@
 
     <script>
         // ============================================================
-        // ✅ YOUR RENDER URL
+        // ✅ YOUR RENDER URL - CHANGE THIS
         // ============================================================
         const API_BASE = 'https://private-chat-app-a5el.onrender.com';
 
@@ -726,7 +781,6 @@
             showSidebarOnMobile();
             selectedUserId = null;
             chatHeader.style.display = 'none';
-            chatInputWrapper.style.display = 'none';
             messagesBox.innerHTML = `<div class="empty-state"><div class="icon">💬</div><h3>Select a user to start chatting</h3><p>Choose a contact from the sidebar</p></div>`;
         });
 
@@ -883,7 +937,10 @@
         function selectUser(user) {
             selectedUserId = user.id;
             chatHeader.style.display = 'flex';
+            // Show chat input wrapper on both desktop and mobile
             chatInputWrapper.style.display = 'block';
+            chatInputWrapper.classList.add('show');
+            
             const color = `#${Math.floor(Math.random()*16777215).toString(16).padStart(6, '0')}`;
             chatAvatar.textContent = user.displayName.charAt(0).toUpperCase();
             chatAvatar.style.background = color;
