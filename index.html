@@ -33,7 +33,6 @@
         .message.sent { background: #6366f1; color: white; margin-left: auto; }
         .message.received { background: #334155; color: #e2e8f0; }
         .message .time { font-size: 11px; opacity: 0.7; margin-top: 4px; display: block; }
-        .message .delete-btn { background: none; border: none; color: #fca5a5; cursor: pointer; font-size: 12px; margin-left: 8px; }
         .chat-input { display: flex; gap: 12px; }
         .chat-input input { flex: 1; }
         .chat-input button { width: auto; padding: 12px 24px; }
@@ -50,7 +49,6 @@
     <div class="container">
         <h1>🔒 Private Chat</h1>
         
-        <!-- Error Message -->
         <div id="errorMsg" class="error"></div>
 
         <!-- Login Form -->
@@ -104,18 +102,15 @@
 
     <script>
         // ============================================================
-        // ✅ CHANGE THIS URL TO YOUR DEPLOYED BACKEND
+        // ✅ CORRECT RENDER URL (UPDATED)
         // ============================================================
-        const API_BASE = 'https://your-app-name.glitch.me';  // <-- CHANGE THIS!
-        // For Render: https://your-app.onrender.com
-        // For Railway: https://your-app.up.railway.app
+        const API_BASE = 'https://private-chat-app-a5el.onrender.com';
 
         let currentUser = null;
         let currentToken = null;
         let selectedUserId = null;
         let messageInterval = null;
 
-        // DOM Elements
         const loginForm = document.getElementById('loginForm');
         const chatArea = document.getElementById('chatArea');
         const usernameInput = document.getElementById('username');
@@ -134,36 +129,6 @@
         const myAvatar = document.getElementById('myAvatar');
         const myName = document.getElementById('myName');
 
-        // ============================================================
-        // ✅ ENCRYPTION HELPERS (Simple XOR - For demo, use proper AES in production)
-        // ============================================================
-        function generateKey(password, salt) {
-            const encoder = new TextEncoder();
-            const keyMaterial = encoder.encode(password + salt);
-            return crypto.subtle.digest('SHA-256', keyMaterial)
-                .then(hash => new Uint8Array(hash));
-        }
-
-        function encryptText(text, password, salt) {
-            const encoder = new TextEncoder();
-            const data = encoder.encode(text);
-            return generateKey(password, salt).then(key => {
-                const encrypted = data.map((byte, i) => byte ^ key[i % key.length]);
-                return btoa(String.fromCharCode(...encrypted));
-            });
-        }
-
-        function decryptText(ciphertext, password, salt) {
-            const encrypted = Uint8Array.from(atob(ciphertext), c => c.charCodeAt(0));
-            return generateKey(password, salt).then(key => {
-                const decrypted = encrypted.map((byte, i) => byte ^ key[i % key.length]);
-                return new TextDecoder().decode(decrypted);
-            });
-        }
-
-        // ============================================================
-        // ✅ API HELPERS
-        // ============================================================
         function showError(msg) {
             errorMsg.textContent = msg;
             errorMsg.classList.add('show');
@@ -191,9 +156,6 @@
             return response.json();
         }
 
-        // ============================================================
-        // ✅ AUTH FUNCTIONS
-        // ============================================================
         async function login() {
             const username = usernameInput.value.trim().toLowerCase();
             const password = passwordInput.value;
@@ -205,14 +167,12 @@
             }
 
             try {
-                // Try to login first
                 let result = await apiCall('/api/auth/login', {
                     method: 'POST',
                     body: { username, password }
                 });
                 handleAuthSuccess(result);
             } catch (error) {
-                // If login fails, register new user
                 if (!displayName) {
                     showError('Please enter a display name to create new account');
                     return;
@@ -261,9 +221,6 @@
             myName.textContent = currentUser.displayName;
         }
 
-        // ============================================================
-        // ✅ USER MANAGEMENT
-        // ============================================================
         async function loadUsers() {
             try {
                 const users = await apiCall('/api/users');
@@ -300,9 +257,6 @@
             loadMessages();
         }
 
-        // ============================================================
-        // ✅ MESSAGES
-        // ============================================================
         async function loadMessages() {
             if (!selectedUserId) return;
             try {
@@ -321,31 +275,14 @@
             messagesBox.innerHTML = messages.map(msg => {
                 const isSent = msg.senderId === currentUser.id;
                 const time = new Date(msg.timestamp).toLocaleTimeString();
-                // Decrypt message (demo - using simple key)
-                const salt = currentUser.id + msg.senderId + msg.receiverId;
-                // For demo, we'll show encrypted as-is, in real app decrypt here
-                // This is simplified - in production use proper shared secret
                 return `
                     <div class="message ${isSent ? 'sent' : 'received'}">
-                        ${msg.ciphertext} <!-- In real app, decrypt this -->
+                        ${msg.ciphertext}
                         <span class="time">${time}</span>
-                        ${isSent ? `<button class="delete-btn" data-msgid="${msg.id}">🗑️</button>` : ''}
                     </div>
                 `;
             }).join('');
             messagesBox.scrollTop = messagesBox.scrollHeight;
-
-            // Add delete handlers
-            document.querySelectorAll('.delete-btn').forEach(btn => {
-                btn.addEventListener('click', async () => {
-                    const msgId = btn.dataset.msgid;
-                    if (confirm('Delete this message?')) {
-                        // In a real app, call delete endpoint
-                        // For demo, we'll just reload
-                        loadMessages();
-                    }
-                });
-            });
         }
 
         async function sendMessage() {
@@ -353,8 +290,7 @@
             if (!text || !selectedUserId) return;
 
             try {
-                // In real app, encrypt here with shared secret
-                const ciphertext = btoa(text); // Simple base64 for demo
+                const ciphertext = btoa(text);
                 const iv = crypto.randomUUID();
                 
                 await apiCall('/api/messages', {
@@ -386,9 +322,6 @@
             }
         }
 
-        // ============================================================
-        // ✅ POLLING (Auto-refresh messages)
-        // ============================================================
         function startPolling() {
             stopPolling();
             messageInterval = setInterval(() => {
@@ -406,9 +339,6 @@
             }
         }
 
-        // ============================================================
-        // ✅ EVENT LISTENERS
-        // ============================================================
         loginBtn.addEventListener('click', login);
         passwordInput.addEventListener('keypress', (e) => e.key === 'Enter' && login());
         logoutBtn.addEventListener('click', logout);
@@ -416,9 +346,6 @@
         messageInput.addEventListener('keypress', (e) => e.key === 'Enter' && sendMessage());
         clearChatBtn.addEventListener('click', clearChat);
 
-        // ============================================================
-        // ✅ CHECK SAVED SESSION
-        // ============================================================
         (async function init() {
             const savedToken = localStorage.getItem('chatToken');
             const savedUser = localStorage.getItem('chatUser');
