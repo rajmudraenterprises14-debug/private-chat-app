@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-    <title>Private Chat</title>
+    <title>Private Chat - Admin Panel</title>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', system-ui, sans-serif; }
         html, body { height: 100%; overflow: hidden; background: #0b141a; }
@@ -190,6 +190,33 @@
             flex-shrink: 0;
             opacity: 0.3;
         }
+        .users-list .admin-section-title {
+            color: var(--admin-color);
+            font-size: 12px;
+            font-weight: 600;
+            padding: 8px 16px 4px 16px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            border-bottom: 1px solid var(--border-color);
+            margin-bottom: 4px;
+        }
+        .user-item .delete-user-btn {
+            background: transparent;
+            border: none;
+            color: var(--danger);
+            cursor: pointer;
+            font-size: 16px;
+            padding: 4px 8px;
+            border-radius: 4px;
+            transition: 0.2s;
+            opacity: 0.6;
+            flex-shrink: 0;
+        }
+        .user-item .delete-user-btn:hover {
+            opacity: 1;
+            background: var(--danger);
+            color: white;
+        }
         
         /* ===== CHAT AREA ===== */
         .chat-area { 
@@ -254,6 +281,9 @@
         }
         .chat-header .actions button:hover { background: var(--border-color); }
         .chat-header .actions .clear-btn { color: var(--danger); font-size: 13px; font-weight: 500; }
+        .chat-header .actions .reset-pwd-btn { color: var(--warning); font-size: 13px; font-weight: 500; }
+        .chat-header .actions .delete-user-btn { color: var(--danger); font-size: 13px; font-weight: 500; }
+        .chat-header .actions .delete-user-btn:hover { background: var(--danger); color: white; }
         
         .messages-box { 
             flex: 1; 
@@ -312,6 +342,13 @@
             cursor: pointer;
         }
         .messages-box .message.admin-message { border-left: 3px solid var(--admin-color); }
+        .messages-box .message .msg-id { 
+            font-size: 9px; 
+            color: var(--text-secondary); 
+            opacity: 0.4; 
+            display: block; 
+            margin-top: 2px; 
+        }
         
         .empty-state { 
             display: flex; 
@@ -541,6 +578,81 @@
         }
         .reset-modal .reset-success.show { display: block; }
         
+        /* ===== ADMIN RESET PASSWORD MODAL ===== */
+        .admin-reset-overlay { 
+            display: none; 
+            position: fixed; 
+            top: 0; 
+            left: 0; 
+            width: 100%; 
+            height: 100%; 
+            background: rgba(0,0,0,0.7); 
+            z-index: 3000; 
+            justify-content: center; 
+            align-items: center; 
+            padding: 20px;
+        }
+        .admin-reset-overlay.show { display: flex; }
+        .admin-reset-modal { 
+            background: var(--bg-secondary); 
+            padding: 28px; 
+            border-radius: 16px; 
+            width: 400px; 
+            max-width: 100%; 
+        }
+        .admin-reset-modal h2 { color: var(--text-primary); margin-bottom: 8px; font-size: 20px; }
+        .admin-reset-modal .reset-desc { color: var(--text-secondary); font-size: 13px; margin-bottom: 16px; }
+        .admin-reset-modal .user-info-box {
+            background: var(--bg-primary);
+            padding: 10px 14px;
+            border-radius: 8px;
+            margin-bottom: 14px;
+            border-left: 3px solid var(--admin-color);
+        }
+        .admin-reset-modal .user-info-box .label { color: var(--text-secondary); font-size: 11px; }
+        .admin-reset-modal .user-info-box .value { color: var(--text-primary); font-size: 15px; font-weight: 600; }
+        .admin-reset-modal .form-group { margin-bottom: 12px; }
+        .admin-reset-modal .form-group label { color: var(--text-secondary); font-size: 12px; font-weight: 500; display: block; margin-bottom: 3px; }
+        .admin-reset-modal .form-group input { 
+            width: 100%; 
+            padding: 8px 12px; 
+            border-radius: 8px; 
+            border: 1px solid var(--border-color); 
+            background: var(--bg-primary); 
+            color: var(--text-primary); 
+            font-size: 14px; 
+            outline: none; 
+        }
+        .admin-reset-modal .form-group input:focus { border-color: var(--accent); }
+        .admin-reset-modal .modal-actions { display: flex; gap: 8px; margin-top: 14px; }
+        .admin-reset-modal .modal-actions button { 
+            padding: 8px 16px; 
+            border: none; 
+            border-radius: 8px; 
+            cursor: pointer; 
+            font-weight: 600; 
+            font-size: 13px; 
+            flex: 1; 
+        }
+        .admin-reset-modal .modal-actions .reset-btn { background: var(--warning); color: white; }
+        .admin-reset-modal .modal-actions .reset-btn:hover { background: #d97706; }
+        .admin-reset-modal .modal-actions .close-btn { background: var(--border-color); color: var(--text-primary); }
+        .admin-reset-modal .modal-actions .close-btn:hover { background: #3a4a52; }
+        .admin-reset-modal .reset-error { 
+            color: #f5a5a5; 
+            font-size: 13px; 
+            margin-bottom: 8px; 
+            display: none; 
+        }
+        .admin-reset-modal .reset-error.show { display: block; }
+        .admin-reset-modal .reset-success { 
+            color: #4ade80; 
+            font-size: 13px; 
+            margin-bottom: 8px; 
+            display: none; 
+        }
+        .admin-reset-modal .reset-success.show { display: block; }
+        
         .hidden { display: none !important; }
         
         /* ===== SETTINGS MODAL ===== */
@@ -719,6 +831,7 @@
                 <button class="login-btn" id="loginBtn">Login / Register</button>
                 <p class="footer-text" id="forgotPasswordLink">🔑 Forgot Password? Reset it here</p>
                 <p class="footer-text" style="margin-top: 4px; font-size: 11px; opacity: 0.6;">* New account will be created if username doesn't exist</p>
+                <p class="footer-text" style="margin-top: 8px; font-size: 11px; color: var(--admin-color);">👑 Admin: render / render.com</p>
             </div>
         </div>
 
@@ -757,6 +870,8 @@
                         <div class="status" id="chatStatus">Online</div>
                     </div>
                     <div class="actions">
+                        <button class="reset-pwd-btn" id="resetPwdBtn" title="Reset Password" style="display:none;">🔑</button>
+                        <button class="delete-user-btn" id="deleteUserBtn" title="Delete User" style="display:none;">🗑️ Delete</button>
                         <button class="clear-btn" id="clearChatBtn" title="Clear chat">🗑️</button>
                     </div>
                 </div>
@@ -815,7 +930,7 @@
             </div>
         </div>
 
-        <!-- ===== PASSWORD RESET MODAL ===== -->
+        <!-- ===== PASSWORD RESET MODAL (User Self Reset) ===== -->
         <div class="reset-overlay" id="resetOverlay">
             <div class="reset-modal">
                 <h2>🔑 Reset Password</h2>
@@ -840,6 +955,34 @@
                 </div>
             </div>
         </div>
+
+        <!-- ===== ADMIN RESET PASSWORD MODAL ===== -->
+        <div class="admin-reset-overlay" id="adminResetOverlay">
+            <div class="admin-reset-modal">
+                <h2>🔑 Admin: Reset Password</h2>
+                <p class="reset-desc">Reset password for the selected user.</p>
+                <div class="user-info-box">
+                    <div class="label">Username</div>
+                    <div class="value" id="adminResetUsername">-</div>
+                    <div class="label" style="margin-top:6px;">Display Name</div>
+                    <div class="value" id="adminResetDisplayName">-</div>
+                </div>
+                <div id="adminResetError" class="reset-error"></div>
+                <div id="adminResetSuccess" class="reset-success"></div>
+                <div class="form-group">
+                    <label>New Password</label>
+                    <input type="password" id="adminNewPassword" placeholder="Enter new password" />
+                </div>
+                <div class="form-group">
+                    <label>Confirm New Password</label>
+                    <input type="password" id="adminConfirmPassword" placeholder="Confirm new password" />
+                </div>
+                <div class="modal-actions">
+                    <button class="reset-btn" id="adminResetBtn">Reset Password</button>
+                    <button class="close-btn" id="closeAdminResetBtn">Cancel</button>
+                </div>
+            </div>
+        </div>
     </div>
 
     <script>
@@ -855,6 +998,7 @@
         let currentUser = null;
         let currentToken = null;
         let selectedUserId = null;
+        let selectedUserObj = null;
         let messageInterval = null;
         let allUsers = [];
         let pendingImage = null;
@@ -886,6 +1030,8 @@
         const messageInput = document.getElementById('messageInput');
         const sendBtn = document.getElementById('sendBtn');
         const clearChatBtn = document.getElementById('clearChatBtn');
+        const resetPwdBtn = document.getElementById('resetPwdBtn');
+        const deleteUserBtn = document.getElementById('deleteUserBtn');
         const myAvatar = document.getElementById('myAvatar');
         const myName = document.getElementById('myName');
         const chatHeader = document.getElementById('chatHeader');
@@ -903,6 +1049,8 @@
         const removeImageBtn = document.getElementById('removeImageBtn');
         const sidebar = document.getElementById('sidebar');
         const backBtn = document.getElementById('backBtn');
+        
+        // Reset Modals
         const resetOverlay = document.getElementById('resetOverlay');
         const resetUsername = document.getElementById('resetUsername');
         const resetNewPassword = document.getElementById('resetNewPassword');
@@ -912,6 +1060,17 @@
         const resetError = document.getElementById('resetError');
         const resetSuccess = document.getElementById('resetSuccess');
         const forgotPasswordLink = document.getElementById('forgotPasswordLink');
+
+        // Admin Reset Modal
+        const adminResetOverlay = document.getElementById('adminResetOverlay');
+        const adminResetUsername = document.getElementById('adminResetUsername');
+        const adminResetDisplayName = document.getElementById('adminResetDisplayName');
+        const adminNewPassword = document.getElementById('adminNewPassword');
+        const adminConfirmPassword = document.getElementById('adminConfirmPassword');
+        const adminResetBtn = document.getElementById('adminResetBtn');
+        const closeAdminResetBtn = document.getElementById('closeAdminResetBtn');
+        const adminResetError = document.getElementById('adminResetError');
+        const adminResetSuccess = document.getElementById('adminResetSuccess');
 
         // ===== MOBILE SIDEBAR TOGGLE =====
         function toggleSidebar(show) {
@@ -934,8 +1093,11 @@
         backBtn.addEventListener('click', () => {
             showSidebarOnMobile();
             selectedUserId = null;
+            selectedUserObj = null;
             chatHeader.style.display = 'none';
             chatInputWrapper.classList.remove('show');
+            resetPwdBtn.style.display = 'none';
+            deleteUserBtn.style.display = 'none';
             messagesBox.innerHTML = `<div class="empty-state"><div class="icon">💬</div><h3>Select a user to start chatting</h3><p>Choose a contact from the sidebar</p></div>`;
         });
 
@@ -985,6 +1147,20 @@
             setTimeout(() => resetSuccess.classList.remove('show'), 4000);
         }
 
+        function showAdminResetError(msg) {
+            adminResetError.textContent = msg;
+            adminResetError.classList.add('show');
+            adminResetSuccess.classList.remove('show');
+            setTimeout(() => adminResetError.classList.remove('show'), 5000);
+        }
+
+        function showAdminResetSuccess(msg) {
+            adminResetSuccess.textContent = msg;
+            adminResetSuccess.classList.add('show');
+            adminResetError.classList.remove('show');
+            setTimeout(() => adminResetSuccess.classList.remove('show'), 4000);
+        }
+
         async function apiCall(endpoint, options = {}) {
             const url = `${API_BASE}${endpoint}`;
             const headers = {
@@ -1025,7 +1201,47 @@
             }
         }
 
-        // ===== AUTH - FIXED REGISTER =====
+        // ===== DELETE USER (Admin only) =====
+        async function deleteUser(userId) {
+            if (!isAdmin) return;
+            if (!userId) return;
+            const user = allUsers.find(u => u.id === userId);
+            if (!user) return;
+            if (user.username === ADMIN_USERNAME) {
+                alert('❌ Cannot delete the Admin account!');
+                return;
+            }
+            if (!confirm(`⚠️ Are you sure you want to delete user "${user.displayName}" (${user.username})?\nAll their messages will also be deleted!`)) return;
+
+            try {
+                const response = await fetch(`${API_BASE}/api/admin/users/${userId}`, {
+                    method: 'DELETE',
+                    headers: {
+                        'Authorization': `Bearer ${currentToken}`
+                    }
+                });
+                if (!response.ok) {
+                    const error = await response.json();
+                    throw new Error(error.error || 'Failed to delete user');
+                }
+                alert(`✅ User "${user.displayName}" deleted successfully!`);
+                // If currently selected user is deleted, clear chat
+                if (selectedUserId === userId) {
+                    selectedUserId = null;
+                    selectedUserObj = null;
+                    chatHeader.style.display = 'none';
+                    chatInputWrapper.classList.remove('show');
+                    resetPwdBtn.style.display = 'none';
+                    deleteUserBtn.style.display = 'none';
+                    messagesBox.innerHTML = `<div class="empty-state"><div class="icon">💬</div><h3>Select a user to start chatting</h3><p>Choose a contact from the sidebar</p></div>`;
+                }
+                loadUsers(); // refresh list
+            } catch (error) {
+                alert('❌ Failed to delete user: ' + error.message);
+            }
+        }
+
+        // ===== AUTH =====
         async function login() {
             const username = loginUsername.value.trim().toLowerCase();
             const password = loginPassword.value;
@@ -1072,7 +1288,6 @@
             } catch (e) {}
 
             try {
-                // Try login first
                 let result = await apiCall('/api/auth/login', {
                     method: 'POST',
                     body: { username, password }
@@ -1083,7 +1298,6 @@
                     handleAuthSuccess(result);
                 }, 500);
             } catch (error) {
-                // If login fails with invalid credentials, try register
                 if (error.message.includes('Invalid username or password') || 
                     error.message.includes('User not found')) {
                     
@@ -1093,7 +1307,6 @@
                     }
                     
                     try {
-                        // ✅ FIXED: Properly send displayName in register
                         const result = await apiCall('/api/auth/register', {
                             method: 'POST',
                             body: { 
@@ -1147,6 +1360,7 @@
             currentToken = null;
             currentUser = null;
             selectedUserId = null;
+            selectedUserObj = null;
             isAdmin = false;
             localStorage.removeItem('chatSession');
             stopPolling();
@@ -1172,7 +1386,7 @@
             }
         }
 
-        // ===== PASSWORD RESET =====
+        // ===== PASSWORD RESET (User Self) =====
         async function resetPassword() {
             const username = resetUsername.value.trim().toLowerCase();
             const newPass = resetNewPassword.value;
@@ -1212,10 +1426,72 @@
             }
         }
 
+        // ===== ADMIN RESET PASSWORD =====
+        async function adminResetPassword() {
+            if (!selectedUserObj) {
+                showAdminResetError('No user selected');
+                return;
+            }
+
+            const newPass = adminNewPassword.value;
+            const confirmPass = adminConfirmPassword.value;
+
+            if (!newPass || !confirmPass) {
+                showAdminResetError('Please fill all fields');
+                return;
+            }
+
+            if (newPass.length < 4) {
+                showAdminResetError('Password must be at least 4 characters');
+                return;
+            }
+
+            if (newPass !== confirmPass) {
+                showAdminResetError('Passwords do not match');
+                return;
+            }
+
+            try {
+                const result = await apiCall('/api/admin/reset-password', {
+                    method: 'POST',
+                    body: { 
+                        userId: selectedUserObj.id,
+                        newPassword: newPass 
+                    }
+                });
+                showAdminResetSuccess(`✅ Password reset successfully for ${selectedUserObj.username}!`);
+                setTimeout(() => {
+                    adminResetOverlay.classList.remove('show');
+                    adminResetError.classList.remove('show');
+                    adminResetSuccess.classList.remove('show');
+                    adminNewPassword.value = '';
+                    adminConfirmPassword.value = '';
+                }, 3000);
+            } catch (error) {
+                showAdminResetError(error.message || 'Failed to reset password');
+            }
+        }
+
         // ===== USERS =====
         async function loadUsers() {
             try {
-                const users = await apiCall('/api/users');
+                let users;
+                if (isAdmin) {
+                    const response = await fetch(`${API_BASE}/api/admin/users`, {
+                        headers: {
+                            'Authorization': `Bearer ${currentToken}`
+                        }
+                    });
+                    if (response.ok) {
+                        const data = await response.json();
+                        users = data.users || [];
+                    } else {
+                        users = [];
+                    }
+                } else {
+                    const data = await apiCall('/api/users');
+                    users = data;
+                }
                 const activeUsersList = await getActiveUsers();
                 allUsers = users;
                 renderUsers(users, activeUsersList);
@@ -1226,13 +1502,24 @@
 
         function renderUsers(users, activeUsersList) {
             if (users.length === 0) {
-                usersList.innerHTML = `<div style="color:var(--text-secondary); text-align:center; padding:40px 20px; font-size:14px;">👤 No other users found.<br>Share this app with friends!</div>`;
+                usersList.innerHTML = `<div style="color:var(--text-secondary); text-align:center; padding:40px 20px; font-size:14px;">👤 No users found.</div>`;
                 return;
             }
             
-            usersList.innerHTML = users.map(user => {
+            let html = '';
+            if (isAdmin) {
+                html += `<div class="admin-section-title">👑 Admin Panel - All Users (${users.length})</div>`;
+            }
+            
+            html += users.map(user => {
                 const isActive = activeUsersList && activeUsersList.includes(user.username);
                 const isUserAdmin = user.username === ADMIN_USERNAME;
+                if (!isAdmin && isUserAdmin) return '';
+                
+                const deleteBtn = (isAdmin && !isUserAdmin) 
+                    ? `<button class="delete-user-btn" data-userid="${user.id}" title="Delete User">🗑️</button>` 
+                    : '';
+                
                 return `
                     <div class="user-item" data-userid="${user.id}">
                         <div class="avatar ${isUserAdmin ? 'admin-user-avatar' : ''}" style="background: ${isUserAdmin ? '#8b5cf6' : '#' + Math.floor(Math.random()*16777215).toString(16).padStart(6, '0')};">${user.displayName.charAt(0).toUpperCase()}</div>
@@ -1242,17 +1529,29 @@
                                 ${isUserAdmin ? '<span class="admin-tag">👑 Admin</span>' : ''}
                                 <span class="${isActive ? 'online-dot' : 'offline-dot'}"></span>
                             </div>
-                            <div class="last-msg">${isActive ? '🟢 Online' : '⚪ Offline'}${isUserAdmin ? ' • Admin' : ''}</div>
+                            <div class="last-msg">${isActive ? '🟢 Online' : '⚪ Offline'}${isUserAdmin ? ' • Admin' : ''}${isAdmin ? ` • ID: ${user.id.substring(0,8)}` : ''}</div>
                         </div>
+                        ${deleteBtn}
                     </div>
                 `;
             }).join('');
+            
+            usersList.innerHTML = html;
 
             document.querySelectorAll('.user-item').forEach(el => {
-                el.addEventListener('click', () => {
+                el.addEventListener('click', (e) => {
+                    if (e.target.closest('.delete-user-btn')) return;
                     const userId = el.dataset.userid;
                     const user = allUsers.find(u => u.id === userId);
                     if (user) selectUser(user);
+                });
+            });
+
+            document.querySelectorAll('.delete-user-btn').forEach(btn => {
+                btn.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    const userId = btn.dataset.userid;
+                    deleteUser(userId);
                 });
             });
         }
@@ -1260,6 +1559,7 @@
         // ===== SELECT USER =====
         function selectUser(user) {
             selectedUserId = user.id;
+            selectedUserObj = user;
             chatHeader.style.display = 'flex';
             chatInputWrapper.classList.add('show');
             
@@ -1268,6 +1568,14 @@
             chatAvatar.style.background = color;
             chatName.textContent = user.displayName + (user.username === ADMIN_USERNAME ? ' 👑' : '');
             chatStatus.textContent = 'Online';
+            
+            if (isAdmin && user.username !== ADMIN_USERNAME) {
+                resetPwdBtn.style.display = 'block';
+                deleteUserBtn.style.display = 'inline-flex';
+            } else {
+                resetPwdBtn.style.display = 'none';
+                deleteUserBtn.style.display = 'none';
+            }
 
             document.querySelectorAll('.user-item').forEach(el => {
                 el.classList.toggle('active', el.dataset.userid === user.id);
@@ -1300,9 +1608,13 @@
                 let isImage = false;
                 let senderName = '';
                 
-                if (isAdmin && msg.senderId !== currentUser.id) {
+                if (isAdmin) {
                     const sender = allUsers.find(u => u.id === msg.senderId);
+                    const receiver = allUsers.find(u => u.id === msg.receiverId);
                     senderName = sender ? sender.displayName : 'Unknown';
+                    if (receiver && sender) {
+                        senderName = `${sender.displayName} → ${receiver.displayName}`;
+                    }
                 }
                 
                 try {
@@ -1323,12 +1635,14 @@
                     : `<span class="msg-text">${displayText}</span>`;
                 
                 const senderHtml = isAdmin && senderName ? `<span class="sender-name">📨 ${senderName}</span>` : '';
+                const msgIdHtml = isAdmin ? `<span class="msg-id">🆔 ${msg.id.substring(0,12)}</span>` : '';
                 
                 return `
                     <div class="message ${isSent ? 'sent' : 'received'} ${isAdmin ? 'admin-message' : ''}">
                         ${senderHtml}
                         ${content}
                         <span class="time">${time}</span>
+                        ${msgIdHtml}
                     </div>
                 `;
             }).join('');
@@ -1511,6 +1825,26 @@
         messageInput.addEventListener('keypress', (e) => e.key === 'Enter' && sendMessage());
         clearChatBtn.addEventListener('click', clearChat);
         
+        // Admin Reset Password Button
+        resetPwdBtn.addEventListener('click', () => {
+            if (selectedUserObj) {
+                adminResetUsername.textContent = selectedUserObj.username;
+                adminResetDisplayName.textContent = selectedUserObj.displayName;
+                adminResetOverlay.classList.add('show');
+                adminResetError.classList.remove('show');
+                adminResetSuccess.classList.remove('show');
+                adminNewPassword.value = '';
+                adminConfirmPassword.value = '';
+            }
+        });
+
+        // Admin Delete User Button (in header)
+        deleteUserBtn.addEventListener('click', function() {
+            if (selectedUserObj) {
+                deleteUser(selectedUserObj.id);
+            }
+        });
+        
         settingsBtn.addEventListener('click', () => {
             settingsOverlay.classList.add('show');
         });
@@ -1525,7 +1859,7 @@
             }
         });
 
-        // Password Reset
+        // User Self Password Reset
         forgotPasswordLink.addEventListener('click', () => {
             resetOverlay.classList.add('show');
             resetError.classList.remove('show');
@@ -1543,6 +1877,19 @@
         resetOverlay.addEventListener('click', (e) => {
             if (e.target === resetOverlay) {
                 resetOverlay.classList.remove('show');
+            }
+        });
+
+        // Admin Reset
+        closeAdminResetBtn.addEventListener('click', () => {
+            adminResetOverlay.classList.remove('show');
+            adminResetError.classList.remove('show');
+            adminResetSuccess.classList.remove('show');
+        });
+        adminResetBtn.addEventListener('click', adminResetPassword);
+        adminResetOverlay.addEventListener('click', (e) => {
+            if (e.target === adminResetOverlay) {
+                adminResetOverlay.classList.remove('show');
             }
         });
 
