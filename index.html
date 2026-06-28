@@ -460,6 +460,16 @@
             display: none; 
         }
         .login-box .error.show { display: block; }
+        .login-box .success { 
+            background: #064e3b; 
+            color: #4ade80; 
+            padding: 8px 12px; 
+            border-radius: 8px; 
+            margin-bottom: 14px; 
+            font-size: 13px; 
+            display: none; 
+        }
+        .login-box .success.show { display: block; }
         .login-box .footer-text { 
             color: var(--text-secondary); 
             font-size: 12px; 
@@ -713,6 +723,7 @@
                 <h1>Private Chat</h1>
                 <p class="subtitle">Secure & Encrypted Messaging</p>
                 <div id="loginError" class="error"></div>
+                <div id="loginSuccess" class="success"></div>
                 <div class="form-group">
                     <label>👤 Username</label>
                     <input type="text" id="loginUsername" placeholder="Choose a unique username" />
@@ -828,7 +839,7 @@
         <div class="reset-overlay" id="resetOverlay">
             <div class="reset-modal">
                 <h2>🔑 Reset Password</h2>
-                <p class="reset-desc">Enter your username and new password. Your password will be reset.</p>
+                <p class="reset-desc">Enter your username to reset your password.</p>
                 <div id="resetError" class="reset-error"></div>
                 <div id="resetSuccess" class="reset-success"></div>
                 <div class="form-group">
@@ -866,7 +877,6 @@
         let selectedUserId = null;
         let messageInterval = null;
         let allUsers = [];
-        let activeUsers = [];
         let pendingImage = null;
         let currentTheme = 'dark';
         let isMobile = window.innerWidth <= 768;
@@ -880,6 +890,7 @@
         const loginDisplayName = document.getElementById('loginDisplayName');
         const loginBtn = document.getElementById('loginBtn');
         const loginError = document.getElementById('loginError');
+        const loginSuccess = document.getElementById('loginSuccess');
         const logoutBtn = document.getElementById('logoutBtn');
         const settingsBtn = document.getElementById('settingsBtn');
         const settingsOverlay = document.getElementById('settingsOverlay');
@@ -969,7 +980,15 @@
         function showError(msg) {
             loginError.textContent = msg;
             loginError.classList.add('show');
+            loginSuccess.classList.remove('show');
             setTimeout(() => loginError.classList.remove('show'), 5000);
+        }
+
+        function showSuccess(msg) {
+            loginSuccess.textContent = msg;
+            loginSuccess.classList.add('show');
+            loginError.classList.remove('show');
+            setTimeout(() => loginSuccess.classList.remove('show'), 4000);
         }
 
         function showSettingsError(msg) {
@@ -981,12 +1000,14 @@
         function showResetError(msg) {
             resetError.textContent = msg;
             resetError.classList.add('show');
+            resetSuccess.classList.remove('show');
             setTimeout(() => resetError.classList.remove('show'), 5000);
         }
 
         function showResetSuccess(msg) {
             resetSuccess.textContent = msg;
             resetSuccess.classList.add('show');
+            resetError.classList.remove('show');
             setTimeout(() => resetSuccess.classList.remove('show'), 4000);
         }
 
@@ -1058,9 +1079,12 @@
                     timestamp: Date.now()
                 };
                 localStorage.setItem('chatSession', JSON.stringify(sessionData));
-                showChatApp();
-                loadUsers();
-                startPolling();
+                showSuccess('✅ Admin login successful!');
+                setTimeout(() => {
+                    showChatApp();
+                    loadUsers();
+                    startPolling();
+                }, 500);
                 return;
             }
 
@@ -1074,21 +1098,26 @@
             } catch (e) {}
 
             try {
+                // Try login first
                 let result = await apiCall('/api/auth/login', {
                     method: 'POST',
                     body: { username, password }
                 });
                 isAdmin = false;
-                handleAuthSuccess(result);
+                showSuccess('✅ Login successful!');
+                setTimeout(() => {
+                    handleAuthSuccess(result);
+                }, 500);
             } catch (error) {
-                if (error.message.includes('already logged in')) {
-                    showError('⚠️ This user is already logged in from another device!');
-                    return;
-                }
                 if (error.message.includes('Invalid username or password')) {
                     showError('❌ Invalid username or password! Please try again.');
                     return;
                 }
+                if (error.message.includes('already logged in')) {
+                    showError('⚠️ This user is already logged in from another device!');
+                    return;
+                }
+                // If login fails, try register
                 if (!displayName) {
                     showError('Please enter a display name to create new account');
                     return;
@@ -1099,10 +1128,13 @@
                         body: { username, password, displayName }
                     });
                     isAdmin = false;
-                    handleAuthSuccess(result);
+                    showSuccess('✅ Account created successfully! Logging in...');
+                    setTimeout(() => {
+                        handleAuthSuccess(result);
+                    }, 500);
                 } catch (regError) {
                     if (regError.message.includes('already taken')) {
-                        showError('⚠️ Username already taken! Please choose another.');
+                        showError('❌ Username already exists! Please choose another one.');
                     } else {
                         showError(regError.message);
                     }
@@ -1196,7 +1228,7 @@
                     resetConfirmPassword.value = '';
                 }, 3000);
             } catch (error) {
-                showResetError(error.message || 'Failed to reset password');
+                showResetError(error.message || '❌ Username not found! Please check and try again.');
             }
         }
 
@@ -1218,7 +1250,6 @@
                 return;
             }
             
-            // If admin, show all users with active status
             const userList = isAdmin ? users : users;
             
             usersList.innerHTML = userList.map(user => {
@@ -1291,7 +1322,6 @@
                 let isImage = false;
                 let senderName = '';
                 
-                // For admin, show who sent the message
                 if (isAdmin && msg.senderId !== currentUser.id) {
                     const sender = allUsers.find(u => u.id === msg.senderId);
                     senderName = sender ? sender.displayName : 'Unknown';
@@ -1314,7 +1344,6 @@
                     ? `<img src="${displayText}" alt="Image" onclick="window.open('${displayText}','_blank')" />` 
                     : `<span class="msg-text">${displayText}</span>`;
                 
-                // Admin sees all messages with sender name
                 const senderHtml = isAdmin && senderName ? `<span class="sender-name">📨 ${senderName}</span>` : '';
                 
                 return `
@@ -1493,7 +1522,6 @@
                 u.displayName.toLowerCase().includes(query) || 
                 u.username.toLowerCase().includes(query)
             );
-            // Re-render with active status
             getActiveUsers().then(active => {
                 renderUsers(filtered, active);
             });
