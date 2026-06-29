@@ -1018,7 +1018,7 @@
         // ============================================================
         const API_BASE = 'https://private-chat-app-a5el.onrender.com';
 
-        // ===== ADMIN CREDENTIALS =====
+        // ===== ADMIN CREDENTIALS (Hidden from UI) =====
         const ADMIN_USERNAME = 'render';
         const ADMIN_PASSWORD = 'render.com';
 
@@ -1037,7 +1037,7 @@
         let visibilityTimer = null;
         const VISIBILITY_TIMEOUT = 10000; // 10 seconds
 
-        // DOM Elements
+        // DOM refs
         const loginPage = document.getElementById('loginPage');
         const chatApp = document.getElementById('chatApp');
         const loginUsername = document.getElementById('loginUsername');
@@ -1082,7 +1082,7 @@
         const backBtn = document.getElementById('backBtn');
         const loadingOverlay = document.getElementById('loadingOverlay');
 
-        // Reset Modals
+        // Reset modals
         const resetOverlay = document.getElementById('resetOverlay');
         const resetUsername = document.getElementById('resetUsername');
         const resetNewPassword = document.getElementById('resetNewPassword');
@@ -1093,7 +1093,6 @@
         const resetSuccess = document.getElementById('resetSuccess');
         const forgotPasswordLink = document.getElementById('forgotPasswordLink');
 
-        // Admin Reset
         const adminResetOverlay = document.getElementById('adminResetOverlay');
         const adminResetUsername = document.getElementById('adminResetUsername');
         const adminResetDisplayName = document.getElementById('adminResetDisplayName');
@@ -1111,10 +1110,7 @@
                 visibilityTimer = setTimeout(() => {
                     if (currentToken) {
                         console.log('Auto-logout: Tab minimized/switched for >10s');
-                        apiCall('/api/auth/logout', {
-                            method: 'POST',
-                            body: { token: currentToken }
-                        }).catch(() => {});
+                        apiCall('/api/auth/logout', { method: 'POST', body: { token: currentToken } }).catch(() => {});
                         currentToken = null;
                         currentUser = null;
                         selectedUserId = null;
@@ -1139,7 +1135,7 @@
             }
         });
 
-        // ===== LOADING WITH SAFETY TIMEOUT =====
+        // ===== LOADING =====
         function showLoading() {
             loadingOverlay.classList.remove('hidden');
             if (loadingTimeoutId) clearTimeout(loadingTimeoutId);
@@ -1147,7 +1143,6 @@
                 hideLoading();
             }, 20000);
         }
-
         function hideLoading() {
             loadingOverlay.classList.add('hidden');
             if (loadingTimeoutId) {
@@ -1174,7 +1169,7 @@
             }
         }
 
-        // ===== API CALL WITH TIMEOUT & RETRY =====
+        // ===== API CALL =====
         async function apiCall(endpoint, options = {}, retries = 2) {
             const url = `${API_BASE}${endpoint}`;
             const headers = {
@@ -1188,7 +1183,6 @@
             for (let i = 0; i < retries; i++) {
                 const controller = new AbortController();
                 const timeoutId = setTimeout(() => controller.abort(), 15000);
-
                 try {
                     const response = await fetch(url, {
                         ...options,
@@ -1234,7 +1228,7 @@
             }
         }
 
-        // ===== DELETE USER (Admin) =====
+        // ===== DELETE USER =====
         async function deleteUser(userId) {
             if (!isAdmin) return;
             if (!userId) return;
@@ -1249,9 +1243,7 @@
             try {
                 const response = await fetch(`${API_BASE}/api/admin/users/${userId}`, {
                     method: 'DELETE',
-                    headers: {
-                        'Authorization': `Bearer ${currentToken}`
-                    }
+                    headers: { 'Authorization': `Bearer ${currentToken}` }
                 });
                 if (!response.ok) {
                     const error = await response.json();
@@ -1273,7 +1265,7 @@
             }
         }
 
-        // ===== AUTH =====
+        // ===== LOGIN / REGISTER =====
         async function login() {
             showLoading();
             const username = loginUsername.value.trim().toLowerCase();
@@ -1285,7 +1277,7 @@
                 return;
             }
 
-            // Admin login
+            // Admin login (hidden)
             if (username === ADMIN_USERNAME && password === ADMIN_PASSWORD) {
                 isAdmin = true;
                 currentUser = {
@@ -1341,11 +1333,7 @@
                     try {
                         const result = await apiCall('/api/auth/register', {
                             method: 'POST',
-                            body: { 
-                                username: username, 
-                                password: password, 
-                                displayName: displayName 
-                            }
+                            body: { username, password, displayName }
                         });
                         isAdmin = false;
                         showSuccess('✅ Account created successfully! Logging in...');
@@ -1393,10 +1381,7 @@
 
         function logout() {
             if (currentToken) {
-                apiCall('/api/auth/logout', {
-                    method: 'POST',
-                    body: { token: currentToken }
-                }).catch(() => {});
+                apiCall('/api/auth/logout', { method: 'POST', body: { token: currentToken } }).catch(() => {});
             }
             currentToken = null;
             currentUser = null;
@@ -1536,6 +1521,7 @@
                 showAdminResetError(error.message || 'Failed to reset password');
             }
         }
+
         function showAdminResetError(msg) {
             adminResetError.textContent = msg;
             adminResetError.classList.add('show');
@@ -1555,9 +1541,7 @@
                 let users;
                 if (isAdmin) {
                     const response = await fetch(`${API_BASE}/api/admin/users`, {
-                        headers: {
-                            'Authorization': `Bearer ${currentToken}`
-                        }
+                        headers: { 'Authorization': `Bearer ${currentToken}` }
                     });
                     if (response.ok) {
                         const data = await response.json();
@@ -1873,7 +1857,7 @@
             });
         });
 
-        // ===== MOBILE SIDEBAR =====
+        // ===== MOBILE =====
         function toggleSidebar(show) {
             if (!isMobile) return;
             if (show === false) {
