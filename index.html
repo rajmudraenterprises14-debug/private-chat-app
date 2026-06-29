@@ -511,7 +511,6 @@
             cursor: pointer; 
         }
         .login-box .footer-text:hover { color: var(--accent); }
-        /* ✅ Admin credentials line REMOVED */
         
         /* ===== PASSWORD RESET MODAL ===== */
         .reset-overlay { 
@@ -861,7 +860,6 @@
             <button class="login-btn" id="loginBtn">Login / Register</button>
             <p class="footer-text" id="forgotPasswordLink">🔑 Forgot Password? Reset it here</p>
             <p class="footer-text" style="margin-top: 4px; font-size: 11px; opacity: 0.6;">* New account will be created if username doesn't exist</p>
-            <!-- ✅ Admin credentials line REMOVED -->
         </div>
     </div>
 
@@ -1020,7 +1018,7 @@
         // ============================================================
         const API_BASE = 'https://private-chat-app-a5el.onrender.com';
 
-        // ===== ADMIN CREDENTIALS (Hidden from Login Page) =====
+        // ===== ADMIN CREDENTIALS =====
         const ADMIN_USERNAME = 'render';
         const ADMIN_PASSWORD = 'render.com';
 
@@ -1036,6 +1034,8 @@
         let isAdmin = false;
         let keepAliveInterval = null;
         let loadingTimeoutId = null;
+        let visibilityTimer = null;
+        const VISIBILITY_TIMEOUT = 10000; // 10 seconds
 
         // DOM Elements
         const loginPage = document.getElementById('loginPage');
@@ -1103,6 +1103,41 @@
         const closeAdminResetBtn = document.getElementById('closeAdminResetBtn');
         const adminResetError = document.getElementById('adminResetError');
         const adminResetSuccess = document.getElementById('adminResetSuccess');
+
+        // ===== AUTO-LOGOUT ON TAB/BROWSER MINIMIZE =====
+        document.addEventListener('visibilitychange', function() {
+            if (document.hidden) {
+                if (visibilityTimer) clearTimeout(visibilityTimer);
+                visibilityTimer = setTimeout(() => {
+                    if (currentToken) {
+                        console.log('Auto-logout: Tab minimized/switched for >10s');
+                        apiCall('/api/auth/logout', {
+                            method: 'POST',
+                            body: { token: currentToken }
+                        }).catch(() => {});
+                        currentToken = null;
+                        currentUser = null;
+                        selectedUserId = null;
+                        selectedUserObj = null;
+                        isAdmin = false;
+                        localStorage.removeItem('chatSession');
+                        localStorage.removeItem('chatCredentials');
+                        stopPolling();
+                        stopKeepAlive();
+                        showLoginPage();
+                    }
+                }, VISIBILITY_TIMEOUT);
+            } else {
+                if (visibilityTimer) {
+                    clearTimeout(visibilityTimer);
+                    visibilityTimer = null;
+                }
+                if (currentToken) {
+                    loadUsers();
+                    if (selectedUserId) loadMessages();
+                }
+            }
+        });
 
         // ===== LOADING WITH SAFETY TIMEOUT =====
         function showLoading() {
@@ -1250,7 +1285,7 @@
                 return;
             }
 
-            // Admin login (hidden from UI)
+            // Admin login
             if (username === ADMIN_USERNAME && password === ADMIN_PASSWORD) {
                 isAdmin = true;
                 currentUser = {
